@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="dark" />
 <link rel="icon" href="data:," />
-<title>RogueScape — a roguelike in Gielinor</title>
+<title>RogueScape</title>
 
 <style>
   :root{
@@ -397,7 +397,40 @@
      it spans the frame wide on the black field. The screen still
      dismisses only on real readiness (loadScreenShow gates on the
      actual load completing). */
-  #loadLogo{width:min(920px,94%);height:auto;max-height:86%;object-fit:contain;}
+  #loadLogo{width:min(920px,94%);height:auto;max-height:74%;object-fit:contain;}
+  /* The genuine OSRS-style red loading bar under the logo, driven by
+     the real load fraction (loadScreenTick / V3D.loadFrac). */
+  #loadBar{width:min(620px,88%);height:22px;margin-top:18px;background:#1a0505;border:2px solid #5a0f0f;box-shadow:inset 0 0 0 2px #000, 0 0 0 1px #2b2b2b;}
+  #loadBarFill{height:100%;width:0%;background:linear-gradient(180deg,#e33,#a00 55%,#7d0000);transition:width .18s ease-out;}
+  #loadPct{margin-top:8px;color:#cfc4a5;font-family:Georgia,serif;font-size:15px;letter-spacing:2px;text-shadow:1px 1px 0 #000;}
+  .menuLogo{width:min(560px,94%);height:auto;display:block;margin:0 auto 4px;}
+  /* ---- hub / inventory / bank / shop (Canifis update) ---- */
+  #invGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:6px;}
+  .invSlot{position:relative;aspect-ratio:1/1;background:#3e3529;border:2px solid #57492f;box-shadow:inset 1px 1px 0 #241c10,inset -1px -1px 0 #6b5a3e;border-radius:3px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:2px;}
+  .invSlot.empty{cursor:default;opacity:.55;}
+  .invSlot img{max-width:88%;max-height:88%;image-rendering:auto;pointer-events:none;}
+  .invSlot .invInit{font-weight:800;font-size:17px;pointer-events:none;}
+  .invSlot .invPrice{position:absolute;left:2px;bottom:0;font-size:9.5px;color:#ffd75e;text-shadow:1px 1px 0 #000;pointer-events:none;}
+  .invSlot.rar5{border-color:#ffb52e;box-shadow:inset 1px 1px 0 #241c10,0 0 6px rgba(255,181,46,.55);}
+  .invModeRow{display:flex;gap:6px;margin-top:8px;}
+  .invModeRow .sbtn{flex:1;margin:0;}
+  .invModeRow .sbtn.on{background:#6b5a2e;color:#ffe83d;border-color:#c79a3a;}
+  .doll{display:grid;grid-template-columns:repeat(3,52px);grid-template-areas:"cape head neck" "weapon body shield" ". legs ." "hands feet ring";gap:5px;justify-content:center;margin:8px auto 4px;}
+  .dslot{position:relative;width:52px;height:52px;background:#3e3529;border:2px solid #57492f;box-shadow:inset 1px 1px 0 #241c10,inset -1px -1px 0 #6b5a3e;border-radius:3px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .dslot img{max-width:86%;max-height:86%;pointer-events:none;}
+  .dslot .invInit{font-weight:800;font-size:16px;pointer-events:none;}
+  .dslot .dslotLab{position:absolute;left:0;right:0;bottom:-1px;font-size:8.5px;text-align:center;color:#b3a077;text-shadow:1px 1px 0 #000;pointer-events:none;letter-spacing:.4px;}
+  .dslot.noSlot{opacity:.38;cursor:default;}
+  .dslot.rar5{border-color:#ffb52e;box-shadow:inset 1px 1px 0 #241c10,0 0 6px rgba(255,181,46,.55);}
+  .dollExtra{display:flex;gap:5px;justify-content:center;margin-top:12px;}
+  .bankGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;max-height:216px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:2px;}
+  .shopGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}
+  .hubCard{max-width:680px;width:94%;}
+  .hubCols{display:grid;grid-template-columns:1fr 1fr;gap:14px;text-align:left;}
+  @media (max-width:640px){ .hubCols{grid-template-columns:1fr;} }
+  .hubSecH{font-family:Georgia,serif;color:var(--gold);font-size:15px;margin:4px 0 6px;text-shadow:1px 1px 0 #000;}
+  body.inHub #mapCluster, body.inHub #dashBtn, body.inHub #bossBar{display:none !important;}
+  body.inHub #hud{display:none !important;}
   /* Hiscores (stage 5): the main-page board in the gameframe's own
      stone/parchment treatment and the bundled OSRS font — rank numbers,
      no invented chrome. */
@@ -474,6 +507,7 @@
  <div id="sidebar">
   <div id="tabs">
     <button class="tab" data-tab="ctrl"><img src="assets/ui/world-map-icon.png" alt="">Menu</button>
+    <button class="tab" data-tab="inv"><img src="assets/items/looting-bag.png" alt="">Inv</button>
     <button class="tab" data-tab="stats"><img src="assets/ui/skills-icon.png" alt="">Stats</button>
     <button class="tab active" data-tab="equip"><img src="assets/ui/combat-icon.png" alt="">Equip</button>
   </div>
@@ -482,6 +516,16 @@
       <h3>EQUIPMENT</h3>
       <div id="slots"></div>
       <div id="statSummary"></div>
+    </div>
+    <div id="invPanel" class="panel tabPage hidden">
+      <h3 class="sideH">INVENTORY</h3>
+      <div class="statLine"><img class="wic" data-wfile="Coins 10000.png" alt="Coins"> <b id="invGold">0</b> gp</div>
+      <div id="invGrid"></div>
+      <div class="invModeRow">
+        <button class="sbtn on" id="invModeEquip">Equip</button>
+        <button class="sbtn" id="invModeDrop">Drop</button>
+      </div>
+      <p class="statLine" style="margin-top:6px;">Tap an item to equip it. Each hero wields only their own weapon family — off-class weapons can be banked in Canifis or sold at the bar.</p>
     </div>
     <div id="statsPage" class="panel tabPage hidden">
       <h3 class="sideH">RUN STATS</h3>
@@ -494,6 +538,10 @@
     <div id="ctrlPage" class="panel tabPage hidden">
       <h3 class="sideH">MENU</h3>
       <button class="sbtn" id="btnEquip">Equipment [E]</button>
+      <button class="sbtn" id="btnHubBank">Bank (Canifis)</button>
+      <button class="sbtn" id="btnHubShop">Bar shop (Canifis)</button>
+      <button class="sbtn" id="btnHubHeroes">Choose hero</button>
+      <button class="sbtn" id="btnScores">Hiscores</button>
       <button class="sbtn" id="btnCodex">Codex [C]</button>
       <button class="sbtn" id="btnPause">Pause [P]</button>
       <button class="sbtn" id="btnMute">Sound: On</button>
@@ -504,11 +552,12 @@
   </div>
  </div>
 
-  <!-- START -->
-  <div class="overlay" id="startScreen">
+  <!-- START (fallback menu — the game boots into the Canifis hub;
+       this screen remains as the fallback if the 3D hub cannot load,
+       and as the Hiscores host) -->
+  <div class="overlay hidden" id="startScreen">
     <div class="card">
-      <h1>ROGUESCAPE</h1>
-      <p style="font-family:Georgia,serif;color:var(--yellow);font-size:19px;margin-top:0;">— in Gielinor —</p>
+      <img class="menuLogo" src="assets/ui/roguescape-logo-landscape.jpg" alt="RogueScape">
       <p>The King Black Dragon has unleashed Death's horde across Varrock. Pick a hero and fight through the real city's streets — survive the swarm, take blessings from the gods of Gielinor, loot gear from bronze to mythic — and slay the dragon when it comes for you at <b style="color:#fff">7:00</b>.</p>
       <div class="heroRow" id="heroRow"></div>
       <p class="keys">Move: <b>tap the ground</b> to walk there (click-to-move) or <b>W A S D</b> &nbsp;·&nbsp; Dash <b>Space</b> / <b>Shift</b> (i-frames) &nbsp;·&nbsp; Attacks are automatic &nbsp;·&nbsp; <b>P</b> pause &nbsp;·&nbsp; <b>C</b> codex</p>
@@ -605,7 +654,63 @@
       <p id="endFlavor"></p>
       <div id="endStats" style="text-align:left;font-size:15px;line-height:1.7;max-width:340px;margin:12px auto;"></div>
       <button class="btn" id="btnRestart">Run it back</button>
-      <button class="btn small" id="btnQuit">Change hero</button>
+      <button class="btn small" id="btnQuit">Return to Canifis</button>
+    </div>
+  </div>
+
+  <!-- BANK (Canifis hub) -->
+  <div class="overlay hidden" id="bankScreen">
+    <div class="card hubCard">
+      <h2>Bank of Canifis</h2>
+      <p style="margin-top:0;">Your stash is kept between visits. Tap a bank item to withdraw it; tap an inventory item to deposit it. Any hero may withdraw any weapon — but only the right hero can wield it.</p>
+      <div class="hubCols">
+        <div>
+          <div class="hubSecH">Bank — <span id="bankCount">0</span> items</div>
+          <div class="bankGrid" id="bankGrid"></div>
+        </div>
+        <div>
+          <div class="hubSecH">Inventory</div>
+          <div class="shopGrid" id="bankInvGrid"></div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:12px;"><button class="btn" id="btnBankClose">Close</button></div>
+    </div>
+  </div>
+
+  <!-- SHOP (Hair of the Dog, Canifis hub) -->
+  <div class="overlay hidden" id="shopScreen">
+    <div class="card hubCard">
+      <h2>Hair of the Dog — Bar Shop</h2>
+      <p style="margin-top:0;">The barkeep buys anything in your inventory at the stated price. Stock rotates every time you return to Canifis — and rare <b style="color:#ffb52e">unique</b> items pass through his hands. You have <b id="shopGold" style="color:#ffd75e">0</b> gp.</p>
+      <div class="hubCols">
+        <div>
+          <div class="hubSecH">Bar stock — tap to buy</div>
+          <div class="shopGrid" id="shopStockGrid"></div>
+        </div>
+        <div>
+          <div class="hubSecH">Your inventory — tap to sell</div>
+          <div class="shopGrid" id="shopInvGrid"></div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:12px;"><button class="btn" id="btnShopClose">Close</button></div>
+    </div>
+  </div>
+
+  <!-- HERO PICK (Canifis hub) -->
+  <div class="overlay hidden" id="heroPickScreen">
+    <div class="card">
+      <h2>Choose your hero</h2>
+      <p>The signpost's carved faces watch the square. Pick who walks into Varrock — each hero wields only their own weapon family.</p>
+      <div class="heroRow" id="hubHeroRow"></div>
+      <div style="text-align:center;margin-top:10px;"><button class="btn small" id="btnHeroPickClose">Stay as you are</button></div>
+    </div>
+  </div>
+
+  <!-- HISCORES (hub host; the panel node is moved here at boot) -->
+  <div class="overlay hidden" id="scoresScreen">
+    <div class="card" style="max-width:600px;">
+      <div id="scoresHost"></div>
+      <div style="text-align:center;margin-top:10px;"><button class="btn" id="btnScoresClose">Back</button></div>
     </div>
   </div>
 
@@ -616,6 +721,8 @@
        load progress, the cache-font loading line. -->
   <div id="loadScreen" class="hidden">
     <img id="loadLogo" src="assets/ui/roguescape-logo-landscape.jpg" alt="RogueScape">
+    <div id="loadBar"><div id="loadBarFill"></div></div>
+    <div id="loadPct">0%</div>
   </div>
 
   <!-- Minimap + orb cluster: a direct child of the frame (NOT the view,
@@ -1285,6 +1392,16 @@ function newGame(hero){
     stats:{},
   };
   P.gear.weapon=hero.start;
+  /* Canifis meta (hub build): the hero's persistent worn set, chosen in
+     the hub / earlier runs, overlays the fresh-run defaults; the purse
+     is the persistent gold. META is defined by the hub module — guard
+     so the classic path still runs if it ever fails to load. */
+  if(typeof META!=='undefined'&&META){
+    const worn=META.worn[hero.id]||{};
+    for(const s in worn){ if(worn[s]) P.gear[s]=worn[s]; }
+    if(!P.gear.weapon) P.gear.weapon=hero.start;
+    P.coins=META.gold|0;
+  }
   G={P, enemies:[], gems:[], loots:[], projs:[], allies:[], splats:[], parts:[],
      time:0, spawnT:0, eliteT:55, miniDone:false, bossSpawned:false, boss:null,
      state:'playing', over:false, victory:false, shake:0, slowmo:0};
@@ -1809,7 +1926,7 @@ function update(dt){
   sysGuard('loot', ()=>{
   for(const l of G.loots){
     l.t+=dt;
-    if(Math.hypot(P.x-l.x,P.y-l.y)<34) { l.got=true; pickupGear(l.item); }
+    if(Math.hypot(P.x-l.x,P.y-l.y)<34) { if(pickupGear(l.item)) l.got=true; /* full inventory: the item stays on the ground */ }
   }
   G.loots=G.loots.filter(l=>!l.got);
   });
@@ -2262,14 +2379,32 @@ function victory(){
    server to share scores between devices, and the panel says so. */
 const HS_ENEMY_NAMES={chicken:'Chicken',rat:'Giant rat',goblin:'Goblin',cow:'Cow',spider:'Spider',skeleton:'Skeleton',zombie:'Zombie',wolf:'Wolf',hillgiant:'Hill giant',mossgiant:'Moss giant',blackknight:'Black Knight',lesserdemon:'Lesser demon',greaterdemon:'Greater demon',kbd:'King Black Dragon',skeletonAlly:'Skeleton',wolfAlly:'Wolf'};
 const HS={key:'osrs-roguelike-hiscores-v1',nameKey:'osrs-roguelike-name-v1',list:[],name:'Hero'};
-function hsLoad(){ try{ const n=localStorage.getItem(HS.nameKey); if(n) HS.name=String(n).slice(0,12)||'Hero'; const raw=localStorage.getItem(HS.key); if(raw){ const a=JSON.parse(raw); if(Array.isArray(a)) HS.list=a.filter(e=>e&&typeof e.time==='number'); } }catch(e){} hsSort(); }
-function hsSave(){ try{ localStorage.setItem(HS.key,JSON.stringify(HS.list.slice(0,10))); localStorage.setItem(HS.nameKey,HS.name); }catch(e){} }
 function hsSort(){ HS.list.sort((a,b)=>((b.win?1:0)-(a.win?1:0))||(b.time-a.time)||(b.kills-a.kills)); }
+/* Hiscores storage seam: ALL board persistence flows through this one
+   interface — submit(record) + fetchTop(). The localStorage
+   implementation lives behind it so a shared backend can replace it
+   later without touching game logic, the ordering rule (victories →
+   survival → kills) or the panel. */
+const HS_STORE={
+  submit(rec){
+    const a=HS_STORE.fetchTop();
+    a.push(rec);
+    a.sort((x,y)=>((y.win?1:0)-(x.win?1:0))||(y.time-x.time)||(y.kills-x.kills));
+    try{ localStorage.setItem(HS.key,JSON.stringify(a.slice(0,10))); }catch(e){}
+  },
+  fetchTop(){
+    try{ const raw=localStorage.getItem(HS.key); if(raw){ const a=JSON.parse(raw); if(Array.isArray(a)) return a.filter(e=>e&&typeof e.time==='number'); } }catch(e){}
+    return [];
+  }
+};
+function hsLoad(){ try{ const n=localStorage.getItem(HS.nameKey); if(n) HS.name=String(n).slice(0,12)||'Hero'; }catch(e){} HS.list=HS_STORE.fetchTop(); hsSort(); }
+function hsSave(){ try{ localStorage.setItem(HS.nameKey,HS.name); }catch(e){} }
 function hsRecord(victory){
   if(!G||!G.P) return null;
   const P=G.P;
   const e={id:Date.now()+''+Math.floor(Math.random()*1e6),name:HS.name||'Hero',time:Math.floor(G.time||0),kills:P.kills|0,lvl:P.lvl|0,win:!!victory,outcome:victory?'Victory':('Slain by '+(G.lastHitBy||'the horde'))};
-  HS.list.push(e); hsSort(); HS.list=HS.list.slice(0,10); hsSave(); hsRender();
+  HS_STORE.submit(e);
+  HS.list=HS_STORE.fetchTop(); hsSort(); hsRender();
   return e;
 }
 function hsRender(){
@@ -2285,7 +2420,7 @@ function hsRender(){
   const inp=$('hsName'); if(inp&&document.activeElement!==inp) inp.value=HS.name;
 }
 function hsSetName(n){ HS.name=String(n||'').trim().slice(0,12)||'Hero'; hsSave(); hsRender(); }
-window.__hiscores={record:v=>hsRecord(!!v),list:()=>HS.list.slice(),name:()=>HS.name,setName:n=>hsSetName(n),clear:()=>{ HS.list=[]; hsSave(); hsRender(); }};
+window.__hiscores={record:v=>hsRecord(!!v),list:()=>HS.list.slice(),name:()=>HS.name,setName:n=>hsSetName(n),clear:()=>{ try{ localStorage.setItem(HS.key,'[]'); }catch(e){} HS.list=[]; hsRender(); },store:HS_STORE};
 hsLoad();
 { const b=$('hsNameBtn'); if(b) b.onclick=()=>{ hsSetName(($('hsName')||{}).value); SFX.click(); };
   const inp=$('hsName'); if(inp) inp.addEventListener('keydown',ev=>{ ev.stopPropagation(); if(ev.key==='Enter') hsSetName(inp.value); }); }
@@ -2366,9 +2501,20 @@ $('volSfx').addEventListener('input',e=>{ AUD.sfxVol=e.target.value/100; $('volS
 document.addEventListener('click',e=>{ if(e.target.closest('.btn,.sbtn,.heroCard,.blessCard')) SFX.click(); });
 $('btnResume').onclick=()=>resumeGame();
 $('btnRestart2').onclick=()=>{ $('pauseScreen').classList.add('hidden'); if(G&&G.mode==='3d') startRun3D(G.P.hero); else startRun(G.P.hero); };
-$('btnQuit2').onclick=()=>{ if(G&&G.mode==='3d') exit3DRun(); $('pauseScreen').classList.add('hidden'); $('hud').classList.add('hidden'); document.body.classList.remove('playing'); setPageState(false); $('equipPanel').classList.add('hidden'); $('bossBar').style.display='none'; G=null; $('startScreen').classList.remove('hidden'); setMusic('menu'); };
+/* Leaving a run now returns to the Canifis hub (inventory, gold and
+   bank intact); the old start screen is only the fallback if the hub
+   module is unavailable. */
+function quitToHubOrMenu(){
+  if(typeof returnToHub==='function'){ returnToHub(); return; }
+  if(G&&G.mode==='3d') exit3DRun();
+  $('pauseScreen').classList.add('hidden'); $('endScreen').classList.add('hidden');
+  $('hud').classList.add('hidden'); document.body.classList.remove('playing'); setPageState(false);
+  $('equipPanel').classList.add('hidden'); $('bossBar').style.display='none'; G=null;
+  $('startScreen').classList.remove('hidden'); setMusic('menu');
+}
+$('btnQuit2').onclick=()=>{ quitToHubOrMenu(); };
 $('btnRestart').onclick=()=>{ if(G&&G.mode==='3d') startRun3D(G.P.hero); else startRun(G?G.P.hero:HEROES[0]); };
-$('btnQuit').onclick=()=>{ if(G&&G.mode==='3d') exit3DRun(); $('endScreen').classList.add('hidden'); $('hud').classList.add('hidden'); document.body.classList.remove('playing'); setPageState(false); $('equipPanel').classList.add('hidden'); G=null; $('startScreen').classList.remove('hidden'); setMusic('menu'); };
+$('btnQuit').onclick=()=>{ quitToHubOrMenu(); };
 
 /* ================= 3D VARROCK VIEWER (stage 2a: full city) =================
    Genuine Varrock geometry decoded OFFLINE from the real OSRS cache
@@ -2451,7 +2597,13 @@ function v3dSettle(){ v3dRenderOnce(); }
    first region's texture becomes the one shared atlas; every later
    material is pointed at it and its duplicate disposed, freeing the GPU
    copy. Safe because each file carries exactly one image: the atlas. */
-function v3dShareAtlas(root){
+/* One shared texture atlas PER WORLD: all 9 Varrock GLBs share the
+   city atlas, and the Canifis GLB carries its own — forcing one
+   world's atlas onto the other's meshes (the old single sharedTex)
+   would scramble every texture in the second world loaded. */
+function v3dShareAtlas(root,worldKey){
+  const key=worldKey||'varrock';
+  if(!V3D.sharedTexByWorld) V3D.sharedTexByWorld={};
   root.traverse(o=>{
     if(!o.isMesh) return;
     const mats=Array.isArray(o.material)?o.material:[o.material];
@@ -2460,8 +2612,8 @@ function v3dShareAtlas(root){
       for(const k in m){
         const t=m[k];
         if(t&&t.isTexture){
-          if(!V3D.sharedTex){ V3D.sharedTex=t; }
-          else if(t!==V3D.sharedTex){ m[k]=V3D.sharedTex; t.dispose(); }
+          if(!V3D.sharedTexByWorld[key]){ V3D.sharedTexByWorld[key]=t; if(key==='varrock') V3D.sharedTex=t; }
+          else if(t!==V3D.sharedTexByWorld[key]){ m[k]=V3D.sharedTexByWorld[key]; t.dispose(); }
         }
       }
     }
@@ -2509,17 +2661,50 @@ async function v3dInit(){
     V3D.camera=camera;
     V3D.controls=null; // no spectator orbit controls — the game follow camera drives
     v3dResize();
+    v3dSetMsg('Loading Canifis — the hub at the heart of Morytania, decoded from the real game cache…');
+    // The hub world loads FIRST (one region, ~3 MB) so the game can
+    // boot straight into Canifis; Varrock's 9 regions stream in behind
+    // it and are only required when a run starts. Load fraction counts
+    // 10 units: 1 hub + 9 Varrock.
+    let areasIn=0;
+    V3D.loadFrac=0;
+    try{
+      const cgltf=await new THREE.GLTFLoader().loadAsync('assets/canifis/canifis-13878.glb',ev=>{
+        if(ev&&ev.total>0){ V3D.loadFrac=(ev.loaded/ev.total)/10; loadScreenTick(); }
+      });
+      cgltf.scene.traverse(o=>{ if(o.isInstancedMesh){ try{
+        const geo=o.geometry; if(!geo.boundingSphere) geo.computeBoundingSphere();
+        const gr=(geo.boundingSphere?geo.boundingSphere.radius:2)||2;
+        const arr=o.instanceMatrix?o.instanceMatrix.array:null;
+        if(arr&&o.count>0){
+          let minx=1e9,miny=1e9,minz=1e9,maxx=-1e9,maxy=-1e9,maxz=-1e9;
+          for(let ii=0;ii<o.count;ii++){ const x=arr[ii*16+12],y=arr[ii*16+13],z=arr[ii*16+14]; if(x<minx)minx=x; if(y<miny)miny=y; if(z<minz)minz=z; if(x>maxx)maxx=x; if(y>maxy)maxy=y; if(z>maxz)maxz=z; }
+          const cen=new THREE.Vector3((minx+maxx)/2,(miny+maxy)/2,(minz+maxz)/2);
+          let rad=0;
+          for(let ii=0;ii<o.count;ii++){ const dx=arr[ii*16+12]-cen.x,dy=arr[ii*16+13]-cen.y,dz=arr[ii*16+14]-cen.z; const dd=dx*dx+dy*dy+dz*dz; if(dd>rad)rad=dd; }
+          geo.boundingSphere=new THREE.Sphere(cen,Math.sqrt(rad)+gr+0.5);
+          o.frustumCulled=true;
+        } else o.frustumCulled=false;
+      }catch(e){ o.frustumCulled=false; } } });
+      v3dShareAtlas(cgltf.scene,'canifis');
+      cgltf.scene.visible=(ACTIVE_NAME==='canifis');
+      scene.add(cgltf.scene);
+      (V3D.regions=V3D.regions||{})['13878']=cgltf.scene;
+      (V3D.regionCenter=V3D.regionCenter||{})['13878']={x:32,z:-32};
+      areasIn++;
+      V3D.loadFrac=areasIn/10; loadScreenTick();
+      V3D.hubReady=true; window.__canifis3dReady=true;
+      v3dRenderOnce();
+    }catch(e){ V3D.hubFailed=true; if(window.console) console.warn('Canifis hub load failed (Varrock continues):',e); }
     v3dSetMsg('Loading the full city of Varrock — Grand Exchange to palace, decoded from the real game cache…');
     // Stream the 9 region GLBs into the one scene ONE AT A TIME, centre
     // first: parsing ~52 MB of GLB in parallel saturates the main thread,
     // while sequential loads keep the page responsive between areas and
     // each area appears as its file lands. Ready only when all 9 are in.
     const FILES=['12853','12854','12597','12852','12598','13109','13108','12596','13110'];
-    let areasIn=0;
-    V3D.loadFrac=0;
     for(const id of FILES){
       const gltf=await new THREE.GLTFLoader().loadAsync('assets/varrock/varrock-'+id+'.glb',ev=>{
-        if(ev&&ev.total>0){ V3D.loadFrac=(areasIn+ev.loaded/ev.total)/FILES.length; loadScreenTick(); }
+        if(ev&&ev.total>0){ V3D.loadFrac=(areasIn+ev.loaded/ev.total)/10; loadScreenTick(); }
       });
       gltf.scene.traverse(o=>{ if(o.isInstancedMesh){
         // Per-frame gameplay rendering needs REAL frustum culling on the
@@ -2542,12 +2727,13 @@ async function v3dInit(){
           } else o.frustumCulled=false;
         }catch(e){ o.frustumCulled=false; }
       } });
-      v3dShareAtlas(gltf.scene);
+      v3dShareAtlas(gltf.scene,'varrock');
+      gltf.scene.visible=(ACTIVE_NAME==='varrock');
       scene.add(gltf.scene);
       (V3D.regions=V3D.regions||{})[id]=gltf.scene; // stage 2b: per-region visibility control during play
       (V3D.regionCenter=V3D.regionCenter||{})[id]={x:(id>>8)*64+32-3136, z:-(((id&255)*64+32)-3328)};
       areasIn++;
-      V3D.loadFrac=areasIn/FILES.length; loadScreenTick();
+      V3D.loadFrac=areasIn/10; loadScreenTick();
       v3dRenderOnce();
       // Yield a beat between areas so input and rendering stay live.
       await new Promise(r=>setTimeout(r,30));
@@ -2604,6 +2790,34 @@ setTimeout(()=>{ try{ if(!V3D.ready&&!V3D.failed&&!V3D.loading) v3dInit(); }catc
      camera update + one draw per frame, never a standing loop, and every
      sync step runs behind sysGuard like the rest of the game. */
 const MAP3D={ox:4, oz:-192, s:136/5200, groundY:2.0};
+/* ---- multi-world frame (Varrock run / Canifis hub) ----
+   Every tile/coordinate helper reads the ACTIVE world's frame:
+   (bx,by) = world tile at the scene frame's origin, (ox,oz,s) = the
+   sim->scene mapping exactly as Varrock has always used it. Switching
+   worlds swaps the frame, the collision grid, the height grid and the
+   roof state as one unit, so all existing movement/render code runs
+   unchanged in either world. */
+let ACTIVE_NAME='varrock';
+let ABX=3136, ABY=3328;
+const WORLD_DEFS={
+  varrock:{bx:3136, by:3328, ox:4, oz:-192, s:136/5200, groundY:2.0, dir:'assets/varrock/', ids:['12596','12597','12598','12852','12853','12854','13108','13109','13110']},
+  canifis:{bx:3456, by:3456, ox:0, oz:-64, s:1/(5200/136), groundY:1.875, dir:'assets/canifis/', ids:['13878']}
+};
+const WD={ varrock:{col:null,hgt:null,roof:null,loaded:false,loading:null}, canifis:{col:null,hgt:null,roof:null,loaded:false,loading:null} };
+function setActiveWorld(name){
+  const def=WORLD_DEFS[name]; if(!def) return;
+  try{ g3dRoofSet(-1); }catch(e){} // restore the outgoing world's hidden roofs
+  ACTIVE_NAME=name; ABX=def.bx; ABY=def.by;
+  MAP3D.ox=def.ox; MAP3D.oz=def.oz; MAP3D.s=def.s; MAP3D.groundY=def.groundY;
+  const W=WD[name];
+  COL=W.col; HGT=W.hgt; ROOF=W.roof;
+  window.__colReady=!!W.col;
+  if(V3D.regions){ for(const rid in V3D.regions) V3D.regions[rid].visible = def.ids.indexOf(rid)>=0; }
+  if(V3D.scene){ const hub=name==='canifis';
+    V3D.scene.background=new THREE.Color(hub?0x5d6b52:0x87a8c8);
+    if(V3D.scene.fog){ V3D.scene.fog.color.set(hub?0x5d6b52:0x87a8c8); if(!V3D.playMode){ V3D.scene.fog.near=hub?60:170; V3D.scene.fog.far=hub?240:620; } }
+  }
+}
 /* OSRS locomotion pacing (stage 6): the real game runs on a 0.6s tick and
    walking crosses exactly 1 tile per tick. The 5200-unit sim spans the
    136-tile play area, so 1 tile = 5200/136 ≈ 38.24 sim units and OSRS
@@ -2975,7 +3189,11 @@ function g3dSyncAll(cam){
    looking north; smoothed so it glides instead of snapping. Drawn through
    the viewer's coalescing scheduler (controls are parked during play). */
 function render3D(){
-  if(!G||!V3D.ready||!V3D.renderer||!G3D.group) return;
+  if(!G||!V3D.renderer||!G3D.group) return;
+  /* the hub renders as soon as CANIFIS is in — it must not wait for the
+     whole Varrock stream the way a run does */
+  if(ACTIVE_NAME==='canifis'){ if(!V3D.hubReady) return; }
+  else if(!V3D.ready) return;
   // Size watchdog: if the wrap changed size without a resize event the
   // page heard (viewport swaps, foldables, split-screen), re-fit the
   // renderer instead of painting into a stale-sized canvas.
@@ -2999,10 +3217,12 @@ function render3D(){
   G3D.camTgt.x+=(px-G3D.camTgt.x)*k; G3D.camTgt.z+=(pz-G3D.camTgt.z)*k; G3D.camTgt.y+=(gy+1.15-G3D.camTgt.y)*k;
   cam.position.copy(G3D.camPos); cam.lookAt(G3D.camTgt);
   // District distance culling: regions far beyond the fog line never draw.
-  if(V3D.regions&&V3D.regionCenter){ for(const rid in V3D.regions){ const c=V3D.regionCenter[rid]; if(c) V3D.regions[rid].visible=Math.hypot(c.x-px,c.z-pz)<175; } }
+  // Scoped to the ACTIVE world — the other world's regions share this
+  // scene (and overlapping scene coordinates) and must stay hidden.
+  if(V3D.regions&&V3D.regionCenter){ const ids=WORLD_DEFS[ACTIVE_NAME].ids; for(const rid in V3D.regions){ if(ids.indexOf(rid)<0){ V3D.regions[rid].visible=false; continue; } const c=V3D.regionCenter[rid]; if(c) V3D.regions[rid].visible=Math.hypot(c.x-px,c.z-pz)<175; } }
   g3dSyncAll(cam);
   sysGuard('roofs', g3dRoofTick);
-  sysGuard('minimap',drawMinimap);
+  if(!G.hub) sysGuard('minimap',drawMinimap);
   v3dRenderOnce();
 }
 /* ---- run lifecycle ---- */
@@ -3016,6 +3236,8 @@ function ensureCity3D(){
   });
 }
 function setupPlayScene(){
+  setActiveWorld('varrock');
+  try{ worldLoad('varrock'); }catch(e){}
   V3D.playMode=true;
   $('play3dWrap').appendChild(V3D.renderer.domElement);
   if(V3D.regions){ for(const id in V3D.regions) V3D.regions[id].visible=true; } // every district is reachable now — nothing hides
@@ -3089,8 +3311,8 @@ function exit3DRun(){
   try{ v3dResize(); }catch(e){}
 }
 $('play3dBack').onclick=()=>{
-  if(G&&G.mode==='3d'){ exit3DRun(); $('hud').classList.add('hidden'); document.body.classList.remove('playing'); setPageState(false); $('equipPanel').classList.add('hidden'); $('bossBar').style.display='none'; G=null; $('startScreen').classList.remove('hidden'); setMusic('menu'); }
-  else { if(G3D.loadPoll){ clearInterval(G3D.loadPoll); G3D.loadPoll=null; } $('play3d').classList.add('hidden'); setPageState(false); $('startScreen').classList.remove('hidden'); }
+  if(G&&G.mode==='3d'){ quitToHubOrMenu(); }
+  else { if(G3D.loadPoll){ clearInterval(G3D.loadPoll); G3D.loadPoll=null; } $('play3d').classList.add('hidden'); setPageState(false); if(typeof returnToHub==='function') returnToHub(); else $('startScreen').classList.remove('hidden'); }
 };
 
 /* ---- click-to-move input (3D play): tap the ground, walk there ----
@@ -3155,7 +3377,7 @@ function g3dShowMarker(x,y,kind){
     if(ptrs.size===0){
       const onBack=e.target&&e.target.closest&&e.target.closest('#play3dBack');
       if(wasSingle&&!onBack&&performance.now()-downT<500&&Math.hypot(e.clientX-downX,e.clientY-downY)<14){
-        if(G&&G.mode==='3d'&&G.state==='playing'){ G3D.lastTapT=performance.now(); g3dTapToGround(e.clientX,e.clientY); }
+        if(G&&G.mode==='3d'&&(G.state==='playing'||G.state==='hub')){ G3D.lastTapT=performance.now(); g3dTapToGround(e.clientX,e.clientY); }
       }
       pinched=false;
     }
@@ -3602,24 +3824,51 @@ try{ entLoad(); }catch(e){}
    a BFS flow-field from the player's tile. Diagonal steps obey the OSRS
    corner rule. Ground heights stay on the flat plane (stated before). */
 let COL=null;
-/* ---- terrain heights (stage 5): per-tile ground heights sampled from
-   the SAME cache terrain the region GLBs render (assets/varrock/
-   heights.json — 0.5-unit grid over the whole city, exported offline
-   from the terrain meshes). The Grand Exchange floor really is raised
-   (~6.07 vs ~1.89 at the Square): entities, loot, the click marker and
-   the camera now stand on the true surface instead of one flat plane. */
+/* ---- terrain heights: per-tile GROUND-FLOOR heights from the cache
+   (assets/<world>/heights.json — 0.5-unit grid). Regenerated for the
+   Canifis update by ExportHeights from PLANE 0 only, with the client's
+   bridge rule: a tile whose plane-1 tile carries the bridge flag (the
+   GE's raised stone floor, the Canifis bank's floorboards) stands at
+   that deck's height. The previous grid was sampled from the stacked
+   4-plane terrain meshes and returned the plane-3 height (6.07) inside
+   the GE — the hero rendered on the roof while pathing at ground
+   level. That is the roof-walking bug; it cannot recur from this data:
+   planes 2/3 and non-bridge plane 1 are never a height source, and an
+   offline BFS over the shipped collision proves every reachable GE
+   interior tile now stands at 1.88–2.31 (ground/deck), none at roof
+   height. ---- */
 let HGT=null;
-async function g3dLoadHeights(){
-  if(HGT) return;
-  try{
-    const r=await fetch('assets/varrock/heights.json');
-    const j=await r.json();
-    const bin=atob(j.data); const bytes=new Uint8Array(bin.length);
-    for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
-    HGT={x0:j.x0,z0:j.z0,step:j.step,w:j.w,h:j.h,scale:j.scale||512,data:new Uint16Array(bytes.buffer)};
-    window.__hgtReady=true;
-  }catch(e){ if(window.console) console.warn('heights load failed; flat ground remains:',e); }
+function makeRoofState(){ return {tile:new Map(),data:null,regions:{},bound:false,regionBound:{},hiddenCid:-1,saved:new Map(),zero:null}; }
+function b64Bytes(b64){ const bin=atob(b64); const bytes=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i); return bytes; }
+/* Load one world's sidecars (collision / heights / roofs) from its own
+   exported files; when it is the active world, swap them in live. */
+function worldLoad(name){
+  const W=WD[name]; if(!W) return Promise.resolve();
+  if(W.loaded) return Promise.resolve();
+  if(W.loading) return W.loading;
+  const dir=WORLD_DEFS[name].dir;
+  W.loading=(async()=>{
+    try{
+      const rc=await fetch(dir+'collision.json'); const jc=await rc.json();
+      W.col={x0:jc.x0,y0:jc.y0,w:jc.w,h:jc.h,data:b64Bytes(jc.data)};
+    }catch(e){ if(window.console) console.warn(name+' collision load failed; free movement remains:',e); }
+    try{
+      const rh=await fetch(dir+'heights.json'); const jh=await rh.json();
+      W.hgt={x0:jh.x0,z0:jh.z0,step:jh.step,w:jh.w,h:jh.h,scale:jh.scale||512,data:new Uint16Array(b64Bytes(jh.data).buffer)};
+    }catch(e){ if(window.console) console.warn(name+' heights load failed; flat ground remains:',e); }
+    try{
+      const rr=await fetch(dir+'roofs.json'); const jr=await rr.json();
+      const st=makeRoofState();
+      for(const c of jr.clusters) for(const t of c.tiles) st.tile.set(t[0]+','+t[1],c.id);
+      st.data=jr.regions;
+      W.roof=st;
+    }catch(e){ if(window.console) console.warn(name+' roofs load failed; roofs stay on:',e); }
+    W.loaded=true;
+    if(ACTIVE_NAME===name){ COL=W.col; HGT=W.hgt; ROOF=W.roof; window.__colReady=!!W.col; window.__hgtReady=!!W.hgt; window.__roofReady=!!W.roof; }
+  })();
+  return W.loading;
 }
+async function g3dLoadHeights(){ return worldLoad(ACTIVE_NAME); }
 function groundH(sx,sz){
   if(!HGT) return MAP3D.groundY;
   const fx=(sx-HGT.x0)/HGT.step, fz=(sz-HGT.z0)/HGT.step;
@@ -3642,37 +3891,43 @@ function groundH(sx,sz){
    the way the real game does it. If the sidecar ever fails to load or
    validate against the loaded GLBs, roofs simply stay on. */
 let ROOF=null;
-async function g3dLoadRoofs(){
-  if(ROOF) return;
-  ROOF={tile:new Map(),data:null,regions:{},bound:false,hiddenCid:-1,saved:new Map(),zero:null};
-  try{
-    const r=await fetch('assets/varrock/roofs.json');
-    const j=await r.json();
-    for(const c of j.clusters) for(const t of c.tiles) ROOF.tile.set(t[0]+','+t[1],c.id);
-    ROOF.data=j.regions;
-    window.__roofReady=true;
-  }catch(e){ if(window.console) console.warn('roofs load failed; roofs stay on:',e); }
-}
+async function g3dLoadRoofs(){ return worldLoad(ACTIVE_NAME); }
+/* Roof binding, made fault-tolerant (the in-practice failure behind
+   "roofs are not being auto removed"): the old bind demanded that
+   EVERY variant in EVERY region match its recorded instance count in
+   strict emission order, and one mismatch — a variant the loader split
+   or merged differently on a given device — failed the whole city
+   silently, so no roof ever hid anywhere. Now each variant binds
+   independently: strict ordinal first, then any unused unit with the
+   recorded instance count; a variant that cannot be matched is skipped
+   (its roof stays on) without taking the rest of the city down with
+   it. Per-region results are kept so the tick can report them. */
 function g3dRoofBind(){
-  if(!ROOF||!ROOF.data||ROOF.bound||!V3D.regions) return;
-  let allOk=true;
+  if(!ROOF||!ROOF.data||!V3D.regions) return;
+  let anyBound=false;
   for(const rid in ROOF.data){
-    const grp=V3D.regions[rid]; if(!grp){ allOk=false; continue; }
+    if(ROOF.regionBound[rid]) continue;
+    const grp=V3D.regions[rid]; if(!grp) continue;
     const units=[];
     for(const ch of grp.children){
       if(ch.isInstancedMesh) units.push([ch]);
       else if(ch.isGroup){ const ms=[]; ch.traverse(m=>{ if(m.isInstancedMesh) ms.push(m); }); if(ms.length) units.push(ms); }
     }
-    const list=[];
+    const used=new Set(), list=[]; let okCount=0;
     for(const e of ROOF.data[rid]){
-      const unit=units[e.v];
-      if(!unit||!unit.length||unit[0].count!==e.n){ allOk=false; continue; }
+      let unit=null;
+      const cand=units[e.v];
+      if(cand&&cand.length&&!used.has(cand)&&cand[0].count===e.n) unit=cand;
+      if(!unit){ for(const u of units){ if(u.length&&!used.has(u)&&u[0].count===e.n){ unit=u; break; } } }
+      if(!unit) continue;
+      used.add(unit); okCount++;
       list.push({meshes:unit,roof:e.roof});
     }
-    ROOF.regions[rid]=list;
+    if(okCount>0){ ROOF.regions[rid]=list; ROOF.regionBound[rid]=okCount; anyBound=true; }
   }
-  ROOF.bound=allOk;
-  window.__roofBound=allOk;
+  ROOF.bound=anyBound||Object.keys(ROOF.regionBound).length>0;
+  window.__roofBound=ROOF.bound;
+  window.__roofRegions=Object.assign({},ROOF.regionBound);
 }
 function g3dRoofSet(cid){
   if(!ROOF||!ROOF.bound) return;
@@ -3702,25 +3957,15 @@ function g3dRoofTick(){
   g3dRoofSet(cid===undefined?-1:cid);
 }
 window.__roofs={cid:()=>ROOF?ROOF.hiddenCid:-2,bound:()=>!!(ROOF&&ROOF.bound),tiles:()=>ROOF?ROOF.tile.size:0,hidden:()=>ROOF?ROOF.saved.size:0};
-async function g3dLoadCollision(){
-  if(COL) return;
-  try{
-    const r=await fetch('assets/varrock/collision.json');
-    const j=await r.json();
-    const bin=atob(j.data); const arr=new Uint8Array(bin.length);
-    for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
-    COL={x0:j.x0,y0:j.y0,w:j.w,h:j.h,data:arr};
-    window.__colReady=true;
-  }catch(e){ if(window.console) console.warn('collision load failed; free movement remains:',e); }
-}
+async function g3dLoadCollision(){ return worldLoad(ACTIVE_NAME); }
 function colFlag(wx,wy){
   if(!COL) return 1;
   if(wx<COL.x0||wy<COL.y0||wx>=COL.x0+COL.w||wy>=COL.y0+COL.h) return 1;
   return COL.data[(wy-COL.y0)*COL.w+(wx-COL.x0)];
 }
-function simToTile(x,y){ return {tx:Math.floor(3136+w2sx(x)), ty:Math.floor(3328-w2sz(y))}; }
+function simToTile(x,y){ return {tx:Math.floor(ABX+w2sx(x)), ty:Math.floor(ABY-w2sz(y))}; }
 function tileCenterSim(tx,ty){
-  const sx=(tx+0.5)-3136, sz=-((ty+0.5)-3328);
+  const sx=(tx+0.5)-ABX, sz=-((ty+0.5)-ABY);
   return {x:(sx-MAP3D.ox)/MAP3D.s, y:(sz-MAP3D.oz)/MAP3D.s};
 }
 function colCard(tx,ty,dx,dy){
@@ -3933,6 +4178,7 @@ function syncTabs(){
   const ep=$('equipPanel'); if(ep) ep.classList.toggle('hidden',activeTab!=='equip');
   const sp=$('statsPage'); if(sp) sp.classList.toggle('hidden',activeTab!=='stats');
   const cp=$('ctrlPage'); if(cp) cp.classList.toggle('hidden',activeTab!=='ctrl');
+  const ip=$('invPanel'); if(ip) ip.classList.toggle('hidden',activeTab!=='inv');
 }
 document.querySelectorAll('#tabs .tab').forEach(b=>{ b.addEventListener('click',()=>{ selectTab(b.getAttribute('data-tab')); SFX.click(); }); });
 $('btnEquip').onclick=()=>selectTab('equip');
@@ -3949,7 +4195,8 @@ function loop(now){
   if(!G) return;
   try{
     if(G.state==='playing'){ update(dt); }
-    if(G.state==='playing'||G.state==='paused'||G.state==='blessing'||G.state==='over'){ if(G.mode==='3d') sysGuard('render3d', render3D); else sysGuard('render', draw); }
+    else if(G.state==='hub'&&typeof hubUpdate==='function'){ sysGuard('hub', ()=>hubUpdate(dt)); }
+    if(G.state==='playing'||G.state==='paused'||G.state==='blessing'||G.state==='over'||G.state==='hub'){ if(G.mode==='3d') sysGuard('render3d', render3D); else sysGuard('render', draw); }
     frameErrs=0;
   }catch(err){
     // Safety net: an exception mid-frame must never present as a silent
@@ -5802,5 +6049,585 @@ window.__s4={ UNIQUES, BLESSINGS, INFUSIONS, genGear:s4GenGear, makeUnique:s4Mak
     return {name:it.dispName||it.name,rolledRarity:it.rar,totalPts:tot,capRange:(S4_CAP[it.rar]||{})[slot],affixes:it.affixes.map(a=>a.k+':'+a.val+' ('+(a.pts||0)+'pt)')}; }
 };
 </script>
+<script>
+"use strict";
+/* ============================================================
+   STAGE 7 — CANIFIS HUB · INVENTORY · BANK · SHOP · CLASS LOCKS
+   The game now boots into a hub: Canifis, at the heart of
+   Morytania, decoded from the same cache (region 13878) with the
+   same exporter as Varrock. There the player picks a hero at the
+   town signpost, banks loot at the real bank booths (3513,3478–3483),
+   sells and buys at the bar counter of the Hair of the Dog inn
+   (3491–3498,3468), and takes the inn's trapdoor (3495,3464) down
+   into the Varrock run. Gold, the 28-slot inventory, the bank stash,
+   each hero's worn set and the bar stock persist on this device
+   (localStorage, separate keys from the Hiscores).
+   Class lock (user's rule): every weapon family drops on every run;
+   the lock is at EQUIP only — Warrior wields melee, Ranger ranged,
+   Mage magic. Off-class weapons are refused with feedback wherever
+   equipping is attempted, and can be banked for the right hero or
+   sold at the bar. Auto-sell is gone: ground loot goes into the
+   28-slot inventory, and a full inventory leaves the item on the
+   ground. ============================================================ */
+const META_KEY='roguescape-meta-v1';
+const META=(function(){
+  const d={gold:0, heroId:'warrior', inv:new Array(28).fill(null), bank:[], worn:{warrior:{},ranger:{},mage:{}}, stock:null};
+  try{
+    const raw=localStorage.getItem(META_KEY);
+    if(raw){ const m=JSON.parse(raw);
+      if(m&&typeof m==='object'){
+        if(typeof m.gold==='number') d.gold=m.gold|0;
+        if(m.heroId&&HEROES.some(h=>h.id===m.heroId)) d.heroId=m.heroId;
+        if(Array.isArray(m.inv)){ d.inv=new Array(28).fill(null); m.inv.slice(0,28).forEach((it,i)=>{ if(it&&it.name) d.inv[i]=it; }); }
+        if(Array.isArray(m.bank)) d.bank=m.bank.filter(it=>it&&it.name);
+        if(m.worn) for(const hid of ['warrior','ranger','mage']){ if(m.worn[hid]) for(const s in m.worn[hid]){ const it=m.worn[hid][s]; if(it&&it.name&&!it.__proto__) d.worn[hid][s]=it; } }
+        if(Array.isArray(m.stock)) d.stock=m.stock.filter(e=>e&&e.item&&e.item.name&&typeof e.price==='number');
+      }
+    }
+  }catch(e){}
+  return d;
+})();
+function metaSave(){ try{ localStorage.setItem(META_KEY, JSON.stringify(META)); }catch(e){} }
+SLOT_LABEL.waist='Waist'; SLOT_LABEL.jewel='Jewel';
+
+/* ---------- item helpers ---------- */
+function itemDisplayName(it){ return it?(it.dispName||it.name||'Item'):'Item'; }
+function itemBaseName(it){ return it?(it.baseName||it.name||''):'Item'; }
+function sellPrice(it){ if(!it) return 0; return [8,20,55,140,380,900][it.rar]||50; }
+function weaponStyleOf(it){
+  if(!it) return null;
+  if(it.style) return it.style;
+  const a=it.arch||((typeof WEAPON_ARCH!=='undefined')?WEAPON_ARCH[itemBaseName(it)]:null);
+  if(a&&typeof ARCH!=='undefined'&&ARCH[a]) return ARCH[a].proj?(a==='bow'?'r':'s'):'m';
+  const nm=itemBaseName(it).toLowerCase();
+  if(/bow|crossbow|blowpipe|thrownaxe|javelin|chinchompa/.test(nm)) return 'r';
+  if(/staff|wand|sceptre|trident|shadow|bludgeon/.test(nm)&&/staff|wand|sceptre|trident|shadow/.test(nm)) return 's';
+  return 'm';
+}
+const FAM_NAME={m:'melee',r:'ranged',s:'magic'};
+const FAM_HERO={m:'Warrior',r:'Ranger',s:'Mage'};
+function heroById(id){ return HEROES.find(h=>h.id===id)||HEROES[0]; }
+function currentHero(){ return (G&&G.P&&G.P.hero)?G.P.hero:heroById(META.heroId); }
+function canEquipItem(it,hero){
+  if(!it||it.slot!=='weapon') return true;
+  const st=weaponStyleOf(it);
+  return !st||st===hero.style;
+}
+function classLockFeedback(it,hero){
+  const st=weaponStyleOf(it)||'m';
+  toast('The '+hero.name+' cannot wield '+itemDisplayName(it),'#ff5147');
+  chat(itemDisplayName(it)+' is a '+FAM_NAME[st]+' weapon — only the '+FAM_HERO[st]+' can wield it. Bank it for them in Canifis, or sell it at the bar.','#ff9d5c');
+  try{ SFX.click(); }catch(e){}
+}
+
+/* ---------- 28-slot inventory ---------- */
+let INV_MODE='equip'; // 'equip' | 'drop'
+function invFree(){ return META.inv.indexOf(null); }
+function invAdd(it){
+  const i=invFree(); if(i<0) return false;
+  META.inv[i]=it; metaSave(); invRender();
+  return true;
+}
+function invRender(){
+  const g=$('invGold'); if(g) g.textContent=fmt(META.gold);
+  renderInvGrid($('invGrid'), i=>{ if(INV_MODE==='drop') invDropItem(i); else invEquip(i); }, null);
+  if(!$('bankScreen').classList.contains('hidden')) bankRender();
+  if(!$('shopScreen').classList.contains('hidden')) shopRender();
+}
+/* one OSRS-style slot cell; price!=null shows the gp tag (shop/bank) */
+function invSlotEl(it, onClick, price){
+  const d=document.createElement('div');
+  d.className='invSlot'+(it?'':' empty')+(it&&it.rar===5?' rar5':'');
+  if(it){
+    const img=ITEM_IMGS[itemBaseName(it)];
+    if(img&&img.src) d.innerHTML='<img src="'+img.src+'" alt="">';
+    else d.innerHTML='<span class="invInit" style="color:'+getRarColor(it.rar)+'">'+itemDisplayName(it).charAt(0)+'</span>';
+    if(price!=null) d.innerHTML+='<span class="invPrice">'+fmt(price)+' gp</span>';
+    d.title=itemDisplayName(it)+' ('+(it.unique?'Unique':RARITY_NAMES[it.rar])+(it.tier?', Realm Tier '+it.tier:'')+')\n'+statLines(it).join('\n');
+    if(onClick) d.onclick=()=>onClick();
+  }
+  return d;
+}
+function renderInvGrid(box, onClick, priceFn){
+  if(!box) return;
+  box.innerHTML='';
+  META.inv.forEach((it,i)=>{ box.appendChild(invSlotEl(it, it?()=>onClick(i):null, (it&&priceFn)?priceFn(it):null)); });
+}
+function persistWorn(){
+  if(!G||!G.P) return;
+  const h=G.P.hero; if(!h) return;
+  const snap={}; for(const s in G.P.gear) if(G.P.gear[s]) snap[s]=G.P.gear[s];
+  META.worn[h.id]=snap; metaSave();
+}
+function invEquip(i){
+  const it=META.inv[i]; if(!it) return;
+  const hero=currentHero();
+  if(!canEquipItem(it,hero)){ classLockFeedback(it,hero); return; }
+  if(!G||!G.P){ toast('No hero to equip that on yet.','#ff5147'); return; }
+  const slot=it.slot, old=G.P.gear[slot]||null;
+  META.inv[i]=old;
+  G.P.gear[slot]=it;
+  persistWorn(); recalc(); updateEquipUI(); invRender();
+  toast('Equipped: '+itemDisplayName(it), getRarColor(it.rar));
+  try{ SFX.click(); }catch(e){}
+}
+function invDropItem(i){
+  const it=META.inv[i]; if(!it||!G||!G.P) return;
+  META.inv[i]=null; metaSave();
+  const P=G.P, a=(P.face||1)>0?0.6:2.5;
+  G.loots.push({x:clamp(P.x+Math.cos(a)*58,26,WORLD.w-26), y:clamp(P.y+Math.sin(a)*58,26,WORLD.h-26), item:it, t:0});
+  invRender();
+  toast('Dropped: '+itemDisplayName(it),'#b3a077');
+}
+function wornUnequip(slot){
+  if(!G||!G.P) return;
+  const it=G.P.gear[slot]; if(!it) return;
+  const i=invFree();
+  if(i<0){ toast('Inventory full — no room to unequip','#ff5147'); chat('Your inventory is too full to unequip that.','#ff9d5c'); return; }
+  META.inv[i]=it; G.P.gear[slot]=null;
+  persistWorn(); recalc(); updateEquipUI(); invRender();
+  toast('Unequipped: '+itemDisplayName(it),'#fff');
+  try{ SFX.click(); }catch(e){}
+}
+
+/* ---------- worn equipment: the OSRS paper-doll (overrides the list UI) ----------
+   The equipment tab in the game's own arrangement — head, neck, cape,
+   weapon, body, shield, legs, hands, feet, ring — with the game's
+   extra slots (waist, jewel, relic) in a row beneath. RogueScape has
+   no cape/shield/legs items; those doll positions are shown empty.
+   Tap a worn item to unequip it into the inventory; tap an inventory
+   item (Inv tab) to equip it — the hero model re-merges either way. */
+const DOLL=[['cape',null,'Cape'],['head','helm','Head'],['neck','amulet','Neck'],
+  ['weapon','weapon','Weapon'],['body','torso','Body'],['shield',null,'Shield'],
+  ['legs',null,'Legs'],['hands','gloves','Hands'],['feet','boots','Feet'],['ring','ring','Ring']];
+function dollSlotEl(area, slot, label){
+  const d=document.createElement('div');
+  d.className='dslot'; d.style.gridArea=area;
+  const it=slot&&G&&G.P?G.P.gear[slot]:null;
+  if(!slot){ d.className+=' noSlot'; d.innerHTML='<span class="dslotLab">'+label+'</span>'; d.title=label+' — no such items in RogueScape'; return d; }
+  if(it){
+    if(it.rar===5) d.className+=' rar5';
+    const img=ITEM_IMGS[itemBaseName(it)];
+    if(img&&img.src) d.innerHTML='<img src="'+img.src+'" alt="">';
+    else d.innerHTML='<span class="invInit" style="color:'+getRarColor(it.rar)+'">'+itemDisplayName(it).charAt(0)+'</span>';
+    d.innerHTML+='<span class="dslotLab">'+label+'</span>';
+    d.title=itemDisplayName(it)+' ('+(it.unique?'Unique':RARITY_NAMES[it.rar])+')\n'+statLines(it).join('\n')+'\nTap to unequip.';
+    d.onclick=()=>wornUnequip(slot);
+  } else {
+    d.innerHTML='<span class="dslotLab">'+label+'</span>';
+    d.title=label+' — empty';
+  }
+  return d;
+}
+function updateEquipUI(){
+  const P=G&&G.P; if(!P) return;
+  const box=$('slots'); if(!box) return;
+  box.innerHTML='';
+  const doll=document.createElement('div'); doll.className='doll';
+  for(const [area,slot,label] of DOLL) doll.appendChild(dollSlotEl(area,slot,label));
+  box.appendChild(doll);
+  const extra=document.createElement('div'); extra.className='dollExtra';
+  for(const slot of ['waist','jewel','relic']) extra.appendChild(dollSlotEl('',slot,SLOT_LABEL[slot]||slot));
+  box.appendChild(extra);
+  const s=P.stats;
+  $('statSummary').innerHTML=
+    `Damage <b>${Math.round((P.gear.weapon?P.gear.weapon.dmg:P.baseDmg)*playerDamageMul())}</b> · Atk Spd <b>+${Math.round(s.aspd)}%</b> · Crit <b>${Math.round(s.crit+(s.critAtk||0))}% ×300%</b><br>`+
+    `Armor <b>${Math.round(s.armor)}</b> · Evasion <b>${Math.round(s.evasion)}</b> · Regen <b>${(Math.round(s.regen*10)/10)}/s</b><br>`+
+    `Speed <b>+${Math.round(s.ms)}%</b> · XP <b>+${Math.round(s.xp)}%</b> · Luck <b>+${Math.round(s.luck)}%</b> · Pull <b>${Math.round(s.pickupR||0)}px</b><br>`+
+    `<span style="color:#b3a077">Full affix breakdown — Stats tab.</span>`;
+}
+
+/* ---------- ground pickup: into the inventory, never auto-sold ---------- */
+function pickupGear(item){
+  SFX.pickup(); SFX.loot(item.unique?4:item.rar);
+  if(invAdd(item)){
+    toast('Picked up: '+itemDisplayName(item), getRarColor(item.rar));
+    toastEl(item);
+    if(typeof s4HasFx==='function'&&s4HasFx('interactHeal')) healPlayer(10);
+    return true;
+  }
+  if(!G._invFullT||G.time-G._invFullT>4){
+    G._invFullT=G.time;
+    toast('Inventory full — '+itemDisplayName(item)+' stays on the ground','#ff5147');
+    chat('Your inventory is too full. Bank or sell something in Canifis.','#ff9d5c');
+  }
+  return false;
+}
+
+/* ---------- bank ---------- */
+function bankRender(){
+  const bc=$('bankCount'); if(bc) bc.textContent=META.bank.length;
+  const bg=$('bankGrid');
+  if(bg){ bg.innerHTML='';
+    META.bank.forEach((it,i)=>{ bg.appendChild(invSlotEl(it, ()=>bankWithdraw(i), null)); });
+    if(!META.bank.length) bg.innerHTML='<p class="statLine" style="grid-column:1/-1;">The bank is empty. Deposit loot here and it will be waiting on your next visit.</p>';
+  }
+  renderInvGrid($('bankInvGrid'), i=>bankDeposit(i), null);
+}
+function bankDeposit(i){
+  const it=META.inv[i]; if(!it) return;
+  META.bank.push(it); META.inv[i]=null; metaSave(); invRender();
+  toast('Deposited: '+itemDisplayName(it),'#b3a077');
+  try{ SFX.click(); }catch(e){}
+}
+function bankWithdraw(i){
+  const it=META.bank[i]; if(!it) return;
+  const f=invFree();
+  if(f<0){ toast('Inventory full — no room to withdraw','#ff5147'); return; }
+  META.bank.splice(i,1); META.inv[f]=it; metaSave(); invRender();
+  toast('Withdrew: '+itemDisplayName(it),'#b3a077');
+  try{ SFX.click(); }catch(e){}
+}
+function openBank(){ bankRender(); $('bankScreen').classList.remove('hidden'); }
+function closeBank(){ $('bankScreen').classList.add('hidden'); }
+
+/* ---------- shop (Hair of the Dog bar) ---------- */
+function shopGenStock(){
+  const stock=[];
+  const dmdSlots=['weapon','head','torso','hand','feet','ring','amulet','relic','waist','jewel'];
+  for(let i=0;i<4;i++){
+    const it=s4GenGear(dmdSlots[Math.floor(Math.random()*dmdSlots.length)], irand(1,3));
+    stock.push({item:it, price:Math.max(60, Math.round(sellPrice(it)*6*rand(0.9,1.3)))});
+  }
+  for(let i=0;i<2;i++){
+    const u=UNIQUES[Math.floor(Math.random()*UNIQUES.length)];
+    const it=s4MakeUnique(u);
+    stock.push({item:it, price:1500+((it.displayRar||3)+1)*650+irand(0,400)});
+  }
+  META.stock=stock; metaSave();
+}
+function shopRender(){
+  const sg=$('shopGold'); if(sg) sg.textContent=fmt(META.gold);
+  const st=$('shopStockGrid');
+  if(st){ st.innerHTML='';
+    (META.stock||[]).forEach((e,i)=>{ st.appendChild(invSlotEl(e.item, ()=>shopBuy(i), e.price)); });
+    if(!META.stock||!META.stock.length) st.innerHTML='<p class="statLine" style="grid-column:1/-1;">Sold out — fresh stock arrives when you next return to Canifis.</p>';
+  }
+  renderInvGrid($('shopInvGrid'), i=>shopSell(i), it=>sellPrice(it));
+}
+function shopSell(i){
+  const it=META.inv[i]; if(!it) return;
+  const gp=sellPrice(it);
+  META.inv[i]=null; META.gold+=gp; metaSave(); invRender();
+  toast(itemDisplayName(it)+' sold for '+gp+' gp','#ffd75e');
+  try{ SFX.coin(); }catch(e){}
+}
+function shopBuy(i){
+  const e=(META.stock||[])[i]; if(!e) return;
+  if(META.gold<e.price){ toast('Not enough gold — that costs '+fmt(e.price)+' gp','#ff5147'); return; }
+  if(invFree()<0){ toast('Inventory full — no room to buy','#ff5147'); return; }
+  META.gold-=e.price;
+  META.stock.splice(i,1);
+  invAdd(e.item); metaSave(); invRender();
+  toast('Bought: '+itemDisplayName(e.item), getRarColor(e.item.rar));
+  try{ SFX.coin(); }catch(e){}
+}
+function openShop(){ if(!META.stock) shopGenStock(); shopRender(); $('shopScreen').classList.remove('hidden'); }
+function closeShop(){ $('shopScreen').classList.add('hidden'); }
+</script>
+
+<script>
+"use strict";
+/* ============================================================
+   STAGE 7b — THE CANIFIS HUB WORLD
+   Interactables are the genuine cache features of region 13878
+   (Canifis), from the offline location probe of cache 1557:
+   - Bank booths (object 24347) at (3513,3478–3483), plane 1 deck;
+     the player stands in the booth pocket (3511,3480).
+   - The Hair of the Dog bar counter (objects 24324–24332) along
+     (3491–3498,3468); the shop opens from inside the bar.
+   - The town signpost (object 5164, "Read") at (3488,3485) — hero pick.
+   - The inn's trapdoor (object 5055, "Open") at (3495,3464) — the way
+     down into the Varrock run.
+   Movement, camera, collision, heights and roof-hiding are the same
+   systems as the run, pointed at the Canifis world frame. No combat
+   spawns here. ============================================================ */
+const TILE_SIM_HUB=5200/136;
+const HUB_SIM=64*TILE_SIM_HUB;
+const HUB_SPAWN={tx:3488,ty:3482};
+const HUB_SPOTS=[
+  {id:'bank',   label:'Bank',          tile:{tx:3513,ty:3480}, stand:{tx:3511,ty:3480}},
+  {id:'shop',   label:'Bar — Shop',    tile:{tx:3494,ty:3469}, stand:{tx:3494,ty:3472}},
+  {id:'heroes', label:'Heroes',        tile:{tx:3488,ty:3485}, stand:{tx:3488,ty:3483}},
+  {id:'portal', label:'To Varrock',    tile:{tx:3495,ty:3464}, stand:{tx:3495,ty:3466}}
+];
+const HUB={in:false};
+const HUB3D={group:null};
+function hubHero(){ return heroById(META.heroId); }
+
+function buildHubPlayer(){
+  const hero=hubHero();
+  const worn=META.worn[hero.id]||(META.worn[hero.id]={});
+  const P={ x:0, y:0, r:15, hero,
+    baseHp:hero.hp, baseDmg:hero.dmg, baseSpd:hero.spd,
+    lvl:1, xp:0, xpNext:8, totalXp:0, kills:0, coins:META.gold|0,
+    face:1, atkT:0, atkPulse:0, dashT:0, dashCd:0, dashDx:0, dashDy:0, invuln:0, swingT:0,
+    shieldUp:false, shieldT:0, gemStacks:0, gemT:0, revivals:0,
+    gear:{}, bless:{}, timers:{chains:0,fireball:0,chainlt:0,smite:0,frost:0},
+    stats:{}, lastHurtT:null, lastDealtT:null };
+  for(const s in worn) if(worn[s]) P.gear[s]=worn[s];
+  if(!P.gear.weapon) P.gear.weapon=hero.start;
+  G={P, enemies:[], gems:[], loots:[], projs:[], allies:[], splats:[], parts:[], zones:[],
+     time:0, spawnT:0, eliteT:99999, miniDone:true, bossSpawned:true, boss:null,
+     state:'hub', hub:true, mode:'3d', over:false, victory:false, shake:0, slowmo:0,
+     walkTarget:null, walkPath:null, walkDir:null, hubPending:null, lastHitBy:null};
+  WORLD.w=HUB_SIM; WORLD.h=HUB_SIM;
+  const sp=tileCenterSim(HUB_SPAWN.tx,HUB_SPAWN.ty); P.x=sp.x; P.y=sp.y;
+  P.hp=1; recalc(); P.hp=P.stats.maxHp;
+  if(ENT.playerInst){ try{ entDispose(ENT.playerInst); }catch(e){} ENT.playerInst=null; ENT.heroSig=''; }
+  if(G3D.playerRec) G3D.playerRec.mapKey='';
+  G3D.camPos=null; G3D.camTgt=null; G3D.lastSync=0; G3D.markerShowT=0; G3D.markerPos=null;
+  updateEquipUI(); invRender();
+}
+function buildHubLabels(){
+  if(HUB3D.group){ HUB3D.group.visible=true; return; }
+  if(!window.THREE||!V3D.scene) return;
+  const grp=new THREE.Group();
+  for(const sp of HUB_SPOTS){
+    const c=tileCenterSim(sp.stand.tx,sp.stand.ty);
+    const sx=w2sx(c.x), sz=w2sz(c.y), gy=groundH(sx,sz);
+    const cnv=document.createElement('canvas'); cnv.width=256; cnv.height=48;
+    const g=cnv.getContext('2d');
+    g.font='700 25px "RogueScape UF",Arial,sans-serif'; g.textAlign='center';
+    g.lineWidth=6; g.strokeStyle='#000'; g.strokeText(sp.label,128,32);
+    g.fillStyle='#ffd75e'; g.fillText(sp.label,128,32);
+    const tex=new THREE.CanvasTexture(cnv);
+    const spr=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false}));
+    spr.scale.set(3.6,0.68,1); spr.position.set(sx,gy+2.7,sz); grp.add(spr);
+    if(G3D.geoRing){
+      const ring=new THREE.Mesh(G3D.geoRing,new THREE.MeshBasicMaterial({color:0xffd75e,transparent:true,opacity:0.45,depthWrite:false,side:THREE.DoubleSide}));
+      ring.position.set(sx,gy+0.07,sz); ring.scale.set(1.25,1.25,1.25); grp.add(ring);
+    }
+  }
+  V3D.scene.add(grp);
+  HUB3D.group=grp;
+}
+async function enterHub(){
+  setActiveWorld('canifis');
+  await worldLoad('canifis');
+  try{ if(!V3D.ready&&!V3D.loading&&!V3D.failed) v3dInit(); }catch(e){}
+  if(!V3D.scene||!V3D.renderer){ // 3D engine unavailable: classic fallback menu
+    loadScreenShow(false); $('startScreen').classList.remove('hidden'); setPageState(false); return;
+  }
+  setActiveWorld('canifis');
+  $('play3d').classList.remove('hidden');
+  $('play3dBack').classList.add('hidden');
+  const wrap=$('play3dWrap');
+  if(V3D.renderer.domElement.parentElement!==wrap) wrap.appendChild(V3D.renderer.domElement);
+  if(!G3D.group){ G3D.group=new THREE.Group(); V3D.scene.add(G3D.group); g3dBuildStatics(); }
+  G3D.group.visible=true;
+  try{ entLoad(); }catch(e){}
+  /* the run's scene setup owns these camera defaults; the hub must set
+     them too or the follow camera computes NaN and renders black */
+  G3D.camPitch=0.98; G3D.camYaw=-2.2; G3D.camDist=21;
+  /* the frame scheduler only draws in playMode, and render3D's
+     Varrock-ready gate is bypassed for the hub above — put the scene
+     in gameplay-render mode with hub fog while we are here */
+  V3D.playMode=true;
+  if(V3D.scene&&V3D.scene.fog){ V3D.scene.fog.color.set(0x5d6b52); V3D.scene.fog.near=70; V3D.scene.fog.far=260; }
+  cv.style.display='none';
+  document.body.classList.add('g3d');
+  document.body.classList.add('inHub');
+  document.body.classList.add('playing');
+  setPageState(true);
+  syncTabs();
+  try{ resize(); }catch(e){}
+  v3dResize();
+  buildHubPlayer();
+  buildHubLabels();
+  shopGenStock(); // the bar's stock rotates on every return to Canifis
+  HUB.in=true; G3D.active=true;
+  loadScreenShow(false);
+  try{ setMusic('menu'); }catch(e){}
+  try{
+    chat('Welcome to Canifis — the hub at the heart of Morytania.','');
+    chat('Bank at the booths east, the bar shop south, heroes at the signpost, and the trapdoor below the bar leads to Varrock.','#b3a077');
+  }catch(e){}
+}
+function returnToHub(){
+  try{ g3dRoofSet(-1); }catch(e){}
+  try{ if(G&&G.mode==='3d'&&!G.hub) exit3DRun(); }catch(e){}
+  for(const id of ['pauseScreen','endScreen','blessScreen','bankScreen','shopScreen','heroPickScreen','scoresScreen']) $(id).classList.add('hidden');
+  $('hud').classList.add('hidden');
+  $('bossBar').style.display='none';
+  document.body.classList.remove('playing');
+  if(G&&G.P) persistWorn();
+  G=null; HUB.in=false;
+  enterHub();
+}
+function openHubSpot(id){
+  if(id==='bank') openBank();
+  else if(id==='shop') openShop();
+  else if(id==='heroes') openHeroPick();
+  else if(id==='portal'){
+    document.body.classList.remove('inHub');
+    if(HUB3D.group) HUB3D.group.visible=false;
+    HUB.in=false;
+    startRun3D(hubHero());
+  }
+}
+/* hub movement + interactions (the run's update() is not used here:
+   no spawns, no combat — the same click-path steering and collision
+   slide, plus loot reclaim and interact arrival) */
+function hubUpdate(dt){
+  if(!G||!G.P) return;
+  const P=G.P; G.time+=dt;
+  const oldPx=P.x, oldPy=P.y;
+  let mx=(keys['d']||keys['arrowright']?1:0)-(keys['a']||keys['arrowleft']?1:0)+joy.x;
+  let my=(keys['s']||keys['arrowdown']?1:0)-(keys['w']||keys['arrowup']?1:0)+joy.y;
+  if(mx||my){ if(G.walkTarget||G.walkPath){ G.walkTarget=null; G.walkPath=null; G.hubPending=null; } }
+  else if(G.walkPath&&G.walkPath.length){
+    const wp=G.walkPath[0], dx=wp.x-P.x, dy=wp.y-P.y, d=Math.hypot(dx,dy);
+    if(d<9){ G.walkPath.shift(); if(!G.walkPath.length) G.walkTarget=null; }
+    else { mx=dx/d; my=dy/d; }
+  }
+  else if(G.walkTarget){
+    const dx=G.walkTarget.x-P.x, dy=G.walkTarget.y-P.y, d=Math.hypot(dx,dy);
+    if(d<10) G.walkTarget=null; else { mx=dx/d; my=dy/d; }
+  }
+  if(mx||my){ const m2=Math.hypot(mx,my)||1; G.walkDir={x:mx/m2,y:my/m2}; }
+  const mm=Math.hypot(mx,my); if(mm>1){ mx/=mm; my/=mm; }
+  if(mx) P.face=mx>0?1:-1;
+  const spd=OSRS_WALK_SIM*(1+(P.stats.ms||0)/100);
+  P.x+=mx*spd*dt; P.y+=my*spd*dt;
+  if(window.__colReady) g3dSlideMove(P,oldPx,oldPy);
+  P.x=clamp(P.x,26,WORLD.w-26); P.y=clamp(P.y,26,WORLD.h-26);
+  if(P.swingT>0) P.swingT-=dt;
+  for(const l of G.loots){ l.t+=dt; if(Math.hypot(P.x-l.x,P.y-l.y)<34){ if(pickupGear(l.item)) l.got=true; } }
+  G.loots=G.loots.filter(l=>!l.got);
+  if(G.hubPending){
+    const sp=HUB_SPOTS.find(s=>s.id===G.hubPending);
+    if(sp){ const c=tileCenterSim(sp.stand.tx,sp.stand.ty);
+      if(Math.hypot(P.x-c.x,P.y-c.y)<TILE_SIM_HUB*1.5){ G.hubPending=null; G.walkTarget=null; G.walkPath=null; openHubSpot(sp.id); } }
+  }
+}
+/* taps near a hub interactable route to its stand tile and open it on
+   arrival — OSRS object-click behaviour */
+const _g3dSetDestBase=g3dSetDest;
+g3dSetDest=function(gx,gy){
+  if(G&&G.hub){
+    const t=simToTile(gx,gy);
+    for(const sp of HUB_SPOTS){
+      if(Math.abs(t.tx-sp.tile.tx)<=2&&Math.abs(t.ty-sp.tile.ty)<=2){
+        G.hubPending=sp.id;
+        const c=tileCenterSim(sp.stand.tx,sp.stand.ty);
+        _g3dSetDestBase(c.x,c.y);
+        return;
+      }
+    }
+    G.hubPending=null;
+    _g3dSetDestBase(gx,gy);
+    return;
+  }
+  _g3dSetDestBase(gx,gy);
+};
+
+/* ---------- hero pick at the signpost ---------- */
+const HUB_CARD_CV={};
+function hubPaintHeroCards(){
+  for(const id in HUB_CARD_CV){
+    const c=HUB_CARD_CV[id], img=(typeof HERO_IMGS!=='undefined')?HERO_IMGS[id]:null;
+    if(!img||!img.complete||!img.naturalWidth) continue;
+    const g2=c.getContext('2d');
+    g2.clearRect(0,0,c.width,c.height);
+    const sc=Math.min(c.width/img.naturalWidth,c.height/img.naturalHeight);
+    const dw=img.naturalWidth*sc, dh=img.naturalHeight*sc;
+    g2.drawImage(img,(c.width-dw)/2,c.height-dh,dw,dh);
+  }
+}
+function openHeroPick(){
+  const row=$('hubHeroRow'); if(!row) return;
+  if(!row.children.length){
+    HEROES.forEach(h=>{
+      const d=document.createElement('div'); d.className='heroCard'; d.dataset.hero=h.id;
+      const c=document.createElement('canvas'); c.width=144; c.height=168;
+      HUB_CARD_CV[h.id]=c;
+      d.appendChild(c);
+      const nm=document.createElement('div'); nm.className='heroName'; nm.textContent=h.name;
+      const ds=document.createElement('div'); ds.className='heroDesc';
+      ds.textContent=h.desc+' Wields '+(h.style==='m'?'melee':h.style==='r'?'ranged':'magic')+' only — starting weapon: '+h.wname+'.';
+      d.appendChild(nm); d.appendChild(ds);
+      d.onclick=()=>{ pickHero(h.id); };
+      row.appendChild(d);
+    });
+  }
+  row.querySelectorAll('.heroCard').forEach(d=>{
+    d.style.outline=(d.dataset.hero===META.heroId)?'3px solid #ffd75e':'';
+  });
+  hubPaintHeroCards();
+  $('heroPickScreen').classList.remove('hidden');
+}
+function pickHero(id){
+  if(META.heroId===id){ $('heroPickScreen').classList.add('hidden'); return; }
+  META.heroId=id; metaSave();
+  $('heroPickScreen').classList.add('hidden');
+  if(HUB.in){ buildHubPlayer(); }
+  toast('You are now the '+heroById(id).name,'#ffe83d');
+  try{ SFX.click(); }catch(e){}
+}
+
+/* ---------- wiring + boot ---------- */
+function wireHubButtons(){
+  const needHub=fn=>()=>{ if(G&&G.hub) fn(); else toast('That is in Canifis — return to the hub to use it.','#ff9d5c'); };
+  const b1=$('btnHubBank'); if(b1) b1.onclick=needHub(openBank);
+  const b2=$('btnHubShop'); if(b2) b2.onclick=needHub(openShop);
+  const b3=$('btnHubHeroes'); if(b3) b3.onclick=needHub(openHeroPick);
+  const b4=$('btnScores'); if(b4) b4.onclick=()=>{ $('scoresScreen').classList.remove('hidden'); };
+  const c1=$('btnBankClose'); if(c1) c1.onclick=()=>{ closeBank(); try{ SFX.click(); }catch(e){} };
+  const c2=$('btnShopClose'); if(c2) c2.onclick=()=>{ closeShop(); try{ SFX.click(); }catch(e){} };
+  const c3=$('btnHeroPickClose'); if(c3) c3.onclick=()=>{ $('heroPickScreen').classList.add('hidden'); };
+  const c4=$('btnScoresClose'); if(c4) c4.onclick=()=>{ $('scoresScreen').classList.add('hidden'); };
+  const me=$('invModeEquip'), md=$('invModeDrop');
+  if(me) me.onclick=()=>{ INV_MODE='equip'; me.classList.add('on'); if(md) md.classList.remove('on'); };
+  if(md) md.onclick=()=>{ INV_MODE='drop'; md.classList.add('on'); if(me) me.classList.remove('on'); };
+  // first user gesture unlocks audio (menu music in the hub)
+  window.addEventListener('pointerdown',()=>{ try{ unlockAudio(); }catch(e){} },{once:true});
+}
+/* gold: the run purse and the persistent purse are one — sync on change */
+setInterval(()=>{
+  if(G&&G.P&&!G.hub&&typeof G.P.coins==='number'&&G.P.coins!==META.gold){ META.gold=G.P.coins|0; metaSave(); }
+  const ig=$('invGold'); if(ig&&ig.textContent!==fmt(META.gold)) ig.textContent=fmt(META.gold);
+},600);
+/* Codex: the hub, the lock, the bank and the bar, in the game's own words */
+(function(){
+  const card=document.getElementById('codexCard'); if(!card) return;
+  const back=card.querySelector('div[style*="sticky"]');
+  const div=document.createElement('div');
+  div.innerHTML=
+  '<h3>Canifis — the hub</h3>'+
+  '<p>You begin in <b>Canifis</b>, at the heart of Morytania. The <b>bank booths</b> on the east side open your stash — deposit loot there and it persists between visits, for any hero. Inside the <b>Hair of the Dog</b> bar, the barkeep runs a shop: he buys anything in your inventory at the stated price, and his stock — which rotates every time you return to Canifis — includes rare <b>unique</b> items. The town <b>signpost</b> is where you choose your hero. The <b>trapdoor</b> below the bar takes your chosen hero down into the Varrock run; when a run ends, you return here with your inventory, gold and bank intact.</p>'+
+  '<h4>Class-locked weapons</h4>'+
+  '<p>Any weapon can drop on any run — a scimitar <i>can</i> fall into a Mage\u2019s hands. But equipping is locked by class: the <b>Warrior</b> wields melee only, the <b>Ranger</b> ranged only, the <b>Mage</b> magic only. An off-class weapon stays in your inventory, to be banked for the right hero or sold at the bar. The lock applies everywhere equipping can happen. Non-weapon gear is not class-locked.</p>'+
+  '<h4>The inventory</h4>'+
+  '<p>Loot you pick up goes into a 28-slot inventory, exactly as in the old game — nothing is auto-sold any more. If your inventory is full, the item stays on the ground. Tap an inventory item to equip it; tap a worn item on the equipment doll to unequip it; the Drop mode lets you put an item back on the ground.</p>';
+  card.insertBefore(div, back||null);
+})();
+/* audit/debug hooks */
+window.__hub={enter:enterHub, leave:returnToHub, spots:HUB_SPOTS, open:openHubSpot,
+  state:()=>({in:HUB.in, hero:META.heroId, gold:META.gold, inv:META.inv.filter(Boolean).length, bank:META.bank.length, stock:(META.stock||[]).length, world:ACTIVE_NAME}),
+  giveRolled:(slot,minRar)=>{ const it=s4GenGear(slot||'weapon',minRar||0); return invAdd(it)?itemDisplayName(it):null; },
+  giveUnique:(dmd)=>{ const u=UNIQUES.find(x=>x.d===dmd); if(!u) return null; const it=s4MakeUnique(u); return invAdd(it)?it.name:null; }};
+window.__meta=META;
+/* boot: straight into the hub. The old hero-select screen stays as the
+   fallback if the 3D hub cannot load on this device. */
+(function bootHub(){
+  wireHubButtons();
+  try{ const hp=$('hiscorePanel'), host=$('scoresHost'); if(hp&&host) host.appendChild(hp); }catch(e){}
+  setActiveWorld('canifis');
+  invRender();
+  loadScreenShow(true);
+  try{ if(!V3D.loading&&!V3D.ready&&!V3D.failed) v3dInit(); }catch(e){}
+  let tries=0;
+  const iv=setInterval(()=>{
+    tries++;
+    if(V3D.hubReady){ clearInterval(iv); enterHub(); }
+    else if(V3D.failed||V3D.hubFailed||tries>500){
+      clearInterval(iv);
+      if(!HUB.in){ loadScreenShow(false); $('startScreen').classList.remove('hidden'); setPageState(false); }
+    }
+  },300);
+})();
+</script>
 </body>
 </html>
+
