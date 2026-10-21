@@ -57,7 +57,14 @@
   .tab{flex:1;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 1px 3px;background:linear-gradient(180deg,#7a4a3a,#5f3626);border:2px solid #100c07;border-radius:3px;color:#ffd75e;font-family:Arial,Helvetica,sans-serif;font-weight:800;font-size:9.5px;text-shadow:1px 1px 0 #000;box-shadow:inset 1px 1px 0 rgba(255,190,150,.35),inset -1px -1px 0 rgba(0,0,0,.4);}
   .tab img{width:18px;height:18px;object-fit:contain;}
   .tab.active{background:linear-gradient(180deg,#a03c2a,#7e2f1f);color:#fff;box-shadow:inset 1px 1px 0 rgba(255,210,170,.5),inset -1px -1px 0 rgba(0,0,0,.45),0 0 8px rgba(255,90,50,.35);}
-  #tabBody{flex:1;min-height:0;}
+  /* The tab body is the sidebar's scroller, configured EXACTLY like the
+     device-verified menu scroller (#startScreen): a column flex box with
+     main-axis overflow-y:auto and pan-x pan-y, whose panel children are
+     flex:none so tall content (Equip / Stats) overflows on the MAIN axis
+     and scrolls by touch. (Before this, #tabBody had no overflow at all,
+     so panel content was simply clipped unreachable.) */
+  #tabBody{flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;touch-action:pan-x pan-y;}
+  #tabBody>.panel{flex:none;}
   .tabPage .sbtn{display:block;width:100%;margin:0 0 6px;}
   .sideH{margin:0 0 6px;font-family:Georgia,serif;font-size:13px;color:var(--gold);letter-spacing:1px;text-shadow:1px 1px 0 #000;}
   .statLine{font-size:13px;line-height:1.65;color:var(--parch);text-shadow:1px 1px 0 #000;}
@@ -258,6 +265,10 @@
      every non-exempt drag inside #wrap during a run. */
   #startScreen{flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;touch-action:pan-x pan-y;right:0;}
   #startScreen .card{flex:none;width:100%;max-height:none;overflow:visible;}
+  /* Codex gets the identical menu-scroller treatment (its card used the
+     old self-scrolling max-height pattern that failed on the menu). */
+  #codexScreen{flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;touch-action:pan-x pan-y;}
+  #codexScreen .card{flex:none;width:100%;max-height:none;overflow:visible;}
   /* Safe strip for the phone's system bar in the rotated frame: safe-area
      insets are reported in DEVICE orientation, and in the CSS-rotated frame
      the device bottom (home/gesture/3-button strip) maps to the frame's
@@ -376,18 +387,17 @@
   /* Loading screen (stage 5): the genuine OSRS composition — black
      field, the RogueScape logo, the red loading bar. The bar is
      driven by V3D.loadFrac, the real region-streaming progress. */
-  #loadScreen{position:absolute;inset:0;background:#000;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:16px;}
-  /* the RogueScape logo artwork is portrait (816x1287, the user's own
-     supplied art, black background): fit it by height and letterbox on
-     the black field with object-fit — never cropped, never redrawn */
-  #loadLogo{height:min(400px,54%);width:auto;max-width:88%;object-fit:contain;}
-  #loadBarWrap{position:relative;width:min(560px,84%);height:24px;border:2px solid #680a0a;background:#000;}
-  #loadBarFill{position:absolute;left:0;top:0;bottom:0;width:0%;background:#c80000;}
-  #loadPct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;text-shadow:1px 1px 0 #000;}
-  #loadText{color:#fff;font-size:16px;font-weight:700;text-shadow:1px 1px 0 #000;text-align:center;}
-  /* the loading line is the cache's own b12_full bitmap font, rendered from
-     the game files by the exporter — not a font file (see loading-text.png) */
-  #loadTextImg{display:block;margin:14px auto 0;height:30px;image-rendering:pixelated;}
+  #loadScreen{position:absolute;inset:0;background:#000;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;}
+  /* Loading screen = the user's RogueScape logo ONLY (his instruction:
+     "just the logo", no bar). The supplied file was the landscape logo
+     artwork rotated 90deg inside a portrait frame; the shipped asset is
+     that same artwork restored to its landscape orientation and trimmed
+     to the artwork (black margins and the file's baked UI strip cropped
+     away — the artwork itself is pixel-identical). Fitted BY WIDTH so
+     it spans the frame wide on the black field. The screen still
+     dismisses only on real readiness (loadScreenShow gates on the
+     actual load completing). */
+  #loadLogo{width:min(920px,94%);height:auto;max-height:86%;object-fit:contain;}
   /* Hiscores (stage 5): the main-page board in the gameframe's own
      stone/parchment treatment and the bundled OSRS font — rank numbers,
      no invented chrome. */
@@ -605,9 +615,7 @@
        the cache-asset rule), the classic red loading bar on real
        load progress, the cache-font loading line. -->
   <div id="loadScreen" class="hidden">
-    <img id="loadLogo" src="assets/ui/roguescape-logo.jpg" alt="RogueScape">
-    <div id="loadBarWrap"><div id="loadBarFill"></div></div>
-    <img id="loadTextImg" src="assets/ui/loading-text.png" alt="Loading - please wait.">
+    <img id="loadLogo" src="assets/ui/roguescape-logo-landscape.jpg" alt="RogueScape">
   </div>
 
   <!-- Minimap + orb cluster: a direct child of the frame (NOT the view,
@@ -2682,14 +2690,17 @@ function g3dBuildStatics(){
 /* ---- entity billboard records (pooled) ---- */
 function g3dMakeEnt(){
   const grp=new THREE.Group();
-  const sh=new THREE.Mesh(G3D.geoShadow,G3D.shadowMat); sh.position.y=0.04; grp.add(sh);
+  /* No blob shadow: OSRS draws no shadow disc under actors — the model
+     simply stands on the tile. (The disc was one half of the "pasted-in"
+     look the user reported; the other half was a baked shadow sheet in
+     the cache exports — see the ENT notes.) */
   const mesh=new THREE.Mesh(G3D.geoPlane,new THREE.MeshBasicMaterial({alphaTest:0.08,side:THREE.DoubleSide}));
   grp.add(mesh);
   const bar=new THREE.Group();
   const bg=new THREE.Mesh(G3D.geoBar,G3D.barBgMat); bg.scale.set(1.0,0.13,1); bar.add(bg);
   const fg=new THREE.Mesh(G3D.geoBar,new THREE.MeshBasicMaterial({color:0xc62f2f,side:THREE.DoubleSide})); fg.position.z=0.012; bar.add(fg);
   bar.visible=false; grp.add(bar);
-  const rec={grp,mesh,sh,bar,barFg:fg,mapKey:'',h:1,aspect:0.62};
+  const rec={grp,mesh,bar,barFg:fg,mapKey:'',h:1,aspect:0.62};
   grp.visible=false; G3D.group.add(grp);
   return rec;
 }
@@ -2737,8 +2748,6 @@ function g3dSyncEnt(rec,o,cam,isPlayer,isAlly){
   rec.mesh.rotation.y=yaw;
   const flip=isPlayer?(P.face<0):(isAlly?false:(o.x<P.x));
   rec.mesh.scale.set(flip?-w*sm:w*sm,h*sm,1);
-  const sd=Math.max(0.3,(o.r||13)*MAP3D.s*2.3);
-  rec.sh.scale.set(sd,1,sd);
   // hp bar (enemies only)
   if(!isPlayer&&!isAlly&&o.maxHp&&o.hp<o.maxHp&&o.hp>0){
     rec.bar.visible=true; rec.bar.rotation.y=yaw; rec.bar.position.y=h+0.3;
@@ -2843,11 +2852,11 @@ function g3dSyncBars(cam){
     const topY=gy+(MDL_H[P.hero.id]||1.7)+0.34;
     use(P, w2sx(P.x), topY, w2sz(P.y), P.hp/P.stats.maxHp, a);
   }
-  // model-driven enemies (MDL.active maps entity -> instance)
-  if(MDL.loaded&&MDL.active) for(const entry of MDL.active){
+  // model-driven enemies (ENT.active maps entity -> instance)
+  if(ENT.ready&&ENT.active) for(const entry of ENT.active){
     const e=entry[0], inst=entry[1]; if(!G.enemies.includes(e)) continue;
     const a=barVisible(e.hp,e.maxHp,e.lastHurtT,now);
-    use(e, inst.obj.position.x, (inst.gy||0)+(MDL_H[inst.key]||1)*(inst.oscale||1)+0.3, inst.obj.position.z, e.hp/e.maxHp, a);
+    use(e, inst.obj.position.x, (inst.gy||0)+(MDL_H[inst.key]||1)*(inst.esc||1)+0.3, inst.obj.position.z, e.hp/e.maxHp, a);
   }
   // billboard enemies
   for(const entry of G3D.entRecs){
@@ -2862,10 +2871,10 @@ function g3dSyncBars(cam){
 /* ---- per-frame sync of the whole sim into the scene ---- */
 function g3dSyncAll(cam){
   const P=G.P, gy=groundH(w2sx(P.x),w2sz(P.y));
-  // Animated cache models (stage 3) take over the entities they cover;
-  // everything else keeps the billboard path below, untouched.
-  if(MDL.loaded) g3dSyncModels(cam);
-  const covered=MDL.covered;
+  // Client-mechanism cache models (ENT) take over the entities they
+  // cover; everything else keeps the billboard path below, untouched.
+  if(ENT.ready) entSyncModels(cam);
+  const covered=ENT.covered;
   // player
   if(covered&&covered.has(P)){
     if(G3D.playerRec) G3D.playerRec.grp.visible=false;
@@ -3014,7 +3023,7 @@ function setupPlayScene(){
   V3D.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1)); // gameplay renders every frame — fill-rate is the budget
   if(!G3D.group){ G3D.group=new THREE.Group(); V3D.scene.add(G3D.group); g3dBuildStatics(); }
   G3D.group.visible=true;
-  try{ g3dLoadModels(); g3dLoadCollision(); g3dLoadHeights(); g3dLoadRoofs(); }catch(e){}
+  try{ entLoad(); g3dLoadCollision(); g3dLoadHeights(); g3dLoadRoofs(); }catch(e){}
   v3dResize();
 }
 async function startRun3D(hero){
@@ -3172,106 +3181,317 @@ $('sideToggle').onclick=()=>{
   try{ resize(); }catch(e){}
   if(V3D.ready){ try{ v3dResize(); v3dRenderOnce(); }catch(e){} }
 };
-window.__g3d={start:startRun3D,exit:exit3DRun,tap:(x,y)=>g3dTapToGround(x,y),setDest:(x,y)=>{ if(G) g3dSetDest(x,y); },info:()=>({active:G3D.active,mode:G?G.mode:null,px:G?G.P.x:null,py:G?G.P.y:null,sx:G?w2sx(G.P.x):null,sz:G?w2sz(G.P.y):null,tile:G?simToTile(G.P.x,G.P.y):null,walkPath:G&&G.walkPath?G.walkPath.length:0,walkTarget:G?G.walkTarget:null,colReady:!!window.__colReady,colTiles:COL?COL.w*COL.h:0,modelsLoaded:MDL.loaded,modelsFailed:MDL.failed,modelActive:MDL.active.size,playerClip:MDL.playerInst?MDL.playerInst.cur:'',enemies:G?G.enemies.length:0,kills:G?G.P.kills:0,lvl:G?G.P.lvl:0,time:G?G.time:0,cam:V3D.camera?V3D.camera.position.toArray():null})};
+window.__ent={info:()=>({ready:ENT.ready,failed:ENT.failed,heroSig:ENT.heroSig,playerSeq:ENT.playerInst?ENT.playerInst.cur:-1,playerVerts:ENT.playerInst?ENT.playerInst.tv:0,weapon:(G&&G.P&&G.P.gear&&G.P.gear.weapon)?(G.P.gear.weapon.baseName||G.P.gear.weapon.name):null,attackSeq:entPlayerAttackSeq(),active:ENT.active.size}),
+  equipWeapon:(name)=>{ if(!G||!G.P) return 'no run'; const proto=(typeof ALL_ITEMS!=='undefined'?ALL_ITEMS:null)||null; let it=null;
+    if(proto){ for(const cand of proto){ if(cand&&(cand.name===name||cand.baseName===name)){ it=cand; break; } } }
+    if(!it) it={name:name,baseName:name,slot:'weapon',style:'m',dmg:10,rate:1.2};
+    G.P.gear.weapon=it; return 'equipped '+name+' -> seq '+entPlayerAttackSeq(); },
+  spawn:(type,dx,dy)=>{ if(!G) return 'no run'; const e=spawnEnemy(type,false,(G.P.x||0)+(dx||3),(G.P.y||0)+(dy||0)); return e?('spawned '+type):'spawn failed'; }};
+window.__g3d={start:startRun3D,exit:exit3DRun,tap:(x,y)=>g3dTapToGround(x,y),setDest:(x,y)=>{ if(G) g3dSetDest(x,y); },info:()=>({active:G3D.active,mode:G?G.mode:null,px:G?G.P.x:null,py:G?G.P.y:null,sx:G?w2sx(G.P.x):null,sz:G?w2sz(G.P.y):null,tile:G?simToTile(G.P.x,G.P.y):null,walkPath:G&&G.walkPath?G.walkPath.length:0,walkTarget:G?G.walkTarget:null,colReady:!!window.__colReady,colTiles:COL?COL.w*COL.h:0,modelsLoaded:ENT.ready,modelsFailed:ENT.failed,modelActive:ENT.active.size,playerClip:ENT.playerInst?ENT.playerInst.cur:'',enemies:G?G.enemies.length:0,kills:G?G.P.kills:0,lvl:G?G.P.lvl:0,time:G?G.time:0,cam:V3D.camera?V3D.camera.position.toArray():null})};
 
-/* ================= STAGE 3: ANIMATED CACHE MODELS (3D mode) =================
-   Heroes and the early enemy ladder render as TRUE 3D models exported
-   from the same cache (assets/entities/*.glb): the cache's own framemap/
-   frame vertex transforms baked into glTF morph-target keyframes
-   (idle / walk / attack clips), played through THREE.AnimationMixer.
-   Stage 6: the roster is COMPLETE — every combat entity in the ladder,
-   the demons and the King Black Dragon included, has a genuine export
-   (all of its cache definition's models, the definition's recolour
-   table and scale, real cache textures on textured faces). Billboards
-   remain ONLY as the per-entity fallback if a model file itself fails
-   to load, and for the summons whose sprite names alias a roster
-   model (they resolve through MDL_ENEMY to the real model too). */
-const MDL={loaded:false,loading:false,failed:false,proto:{},pools:{},active:new Map(),playerInst:null,covered:new Set(),lastT:0};
-const MDL_ENEMY={chicken:'chicken',rat:'rat',goblin:'goblin',cow:'cow',spider:'spider',skeleton:'skeleton',zombie:'zombie',wolf:'wolf',hillgiant:'hillgiant',mossgiant:'mossgiant',blackknight:'blackknight',lesserdemon:'lesserdemon',greaterdemon:'greaterdemon',kbd:'kbd',skeletonAlly:'skeleton',wolfAlly:'wolf'};
-async function g3dLoadModels(){
-  if(MDL.loaded||MDL.loading||MDL.failed) return; MDL.loading=true;
+/* ================= ENT: THE CLIENT'S OWN ENTITY MECHANISM =================
+   Rebuilt to work the way the OSRS client itself works, from the same
+   cache files (OpenRS2 cache 1557 via the RuneLite Cache API, exported
+   offline into assets/entities2/{ent.json, ent.bin, atlas.png}):
+
+   COMPOSITION = ONE MODEL. The client has no skeleton-with-attachments:
+   an NPC renders as ALL the models in its definition merged into a
+   single model; a player renders as the identity-kit parts merged with
+   the WORN ITEM MODELS of whatever is equipped, slot by slot. Every
+   entity here is likewise ONE merged geometry. When equipment changes,
+   the hero geometry is re-merged with the new slot's worn model — the
+   client's own dynamic-appearance mechanism — so a weapon is quite
+   literally part of the same vertex set as the hand that holds it:
+   through every frame of idle/walk/attack it cannot float, lag or
+   detach, because there is nothing separate to detach.
+
+   ANIMATION = VERTEX-GROUP FRAMES. Cache sequences are per-frame lists
+   of transforms ("translators") addressed to labelled vertex groups of
+   the merged model. entApplyFrame below is a direct port of the
+   client's animate() (RuneLite ModelDefinition.animate): type 0 sets
+   the pivot to the centroid of the addressed groups' CURRENT vertices
+   (raw value when no vertex is addressed), type 1 translates, type 2
+   rotates about the pivot (Z block, then X, then Y; 2048-step trig
+   tables, fixed-point >>16), type 3 scales about the pivot, type 5 is
+   alpha-only. A head, a sword and a shield are groups of the same one
+   model under one frame set, so the head-disconnecting walk cycles of
+   the old per-part bake are impossible by construction.
+
+   GROUND-SHADOW SHEETS EXCLUDED AT EXPORT: several cache definitions
+   carry a flat polygon as one of their "models" (rat 18888, hill/moss
+   giant 17460, demons 17390, KBD 17423) — the client's ground-shadow
+   primitive. Merged in as opaque geometry it rendered as a hard black
+   plate under the monster: the "pasted-in" look. It is excluded from
+   the export, and the billboard fallback's blob disc is gone too —
+   OSRS draws no blob shadows under actors; the model stands on the
+   tile, lit like everything else.
+
+   Weapon attack sequences are bound per weapon CLASS by cache id,
+   chosen from measurements on merged kit+weapon compositions
+   (weapon vertex-group trajectories): sword 390 (diagonal slash),
+   knife 386 (forward stab), axe 393 (vertical chop), greatsword 1665
+   (two-hand-grip slash), bow 426 (draw), crossbow 4230 (fire+reload),
+   staff 1162 (cast, staff raised), fist 422 (punch); by name: whip
+   1658, godsword 7054, halberd 407, rapier 7618, Scythe of vitur 8056.
+   NPC clips are each definition's own stand/walk ids from the cache,
+   with the attack found by the documented same-framemap search (the
+   demons' family attack is 64; the rat has NO attack sequence in the
+   game data — the one named exception, as before). */
+const ENT={ready:false,loading:false,failed:false,json:null,bin:null,tex:null,geoCache:{},seqCache:{},pools:{},active:new Map(),playerInst:null,covered:new Set(),lastT:0,heroSig:'',warned:{}};
+const ENT_ENEMY={chicken:'chicken',rat:'rat',goblin:'goblin',cow:'cow',spider:'spider',skeleton:'skeleton',zombie:'zombie',wolf:'wolf',hillgiant:'hillgiant',mossgiant:'mossgiant',blackknight:'blackknight',lesserdemon:'lesserdemon',greaterdemon:'greaterdemon',kbd:'kbd',skeletonAlly:'skeleton',wolfAlly:'wolf'};
+const ENT_YAW={warrior:Math.PI,ranger:Math.PI,mage:Math.PI,chicken:Math.PI,rat:Math.PI,goblin:Math.PI,cow:Math.PI,spider:Math.PI,skeleton:Math.PI,zombie:Math.PI,wolf:Math.PI,hillgiant:Math.PI,mossgiant:Math.PI,blackknight:Math.PI,lesserdemon:Math.PI,greaterdemon:Math.PI,kbd:Math.PI};
+const ENT_SIN=new Int32Array(2048), ENT_COS=new Int32Array(2048);
+for(let i=0;i<2048;i++){ const a=i/2048*Math.PI*2; ENT_SIN[i]=Math.round(Math.sin(a)*65536); ENT_COS[i]=Math.round(Math.cos(a)*65536); }
+async function entLoad(){
+  if(ENT.ready||ENT.loading||ENT.failed) return; ENT.loading=true;
   try{
-    const keys=['warrior','ranger','mage','chicken','rat','goblin','cow','spider','skeleton','zombie','wolf','hillgiant','mossgiant','blackknight','lesserdemon','greaterdemon','kbd'];
-    let ok=0;
-    for(const k of keys){ try{ MDL.proto[k]=await new THREE.GLTFLoader().loadAsync('assets/entities/'+k+'.glb'); ok++; }catch(e){ if(window.console) console.warn('entity model failed to load: '+k+' (billboard fallback for that type)',e); } }
-    if(ok>0) MDL.loaded=true; else MDL.failed=true;
-  }catch(e){ MDL.failed=true; if(window.console) console.warn('animated entity models failed to load; billboards remain:',e); }
-  MDL.loading=false;
+    const rj=await fetch('assets/entities2/ent.json');
+    const rb=await fetch('assets/entities2/ent.bin');
+    if(!rj.ok||!rb.ok) throw new Error('entity data http '+rj.status+'/'+rb.status);
+    ENT.json=await rj.json(); ENT.bin=await rb.arrayBuffer();
+    ENT.ready=true;
+    if(window.console) console.info('ENT ready: client-mechanism entity data ('+Object.keys(ENT.json.npcs).length+' npc types, '+Object.keys(ENT.json.items).length+' worn items, '+Object.keys(ENT.json.seqs).length+' sequences)');
+  }catch(e){ ENT.failed=true; if(window.console) console.warn('ENT entity data failed to load - billboard fallback active:',e); }
+  ENT.loading=false;
 }
-function g3dClaimModel(key){
-  const pool=MDL.pools[key]||(MDL.pools[key]=[]);
-  let inst=pool.pop();
-  if(inst){ inst.obj.visible=true; inst.dying=0; inst.sm=0; inst.obj.rotation.set(0,inst.yaw||0,0); inst.obj.scale.setScalar(1); inst.oscale=1;
-    /* a pooled instance must never carry the death fade's material state
-       into its next life (a stuck transparent/white shell reads as an
-       untextured white monster) */
-    inst.obj.traverse(m=>{ if(m.isMesh){ const ms=Array.isArray(m.material)?m.material:[m.material]; for(const mm of ms){ if(mm){ mm.opacity=1; mm.transparent=false; mm.vertexColors=true; mm.needsUpdate=true; } } } });
-    return inst; }
-  const proto=MDL.proto[key]; if(!proto) return null;
-  const obj=proto.scene.clone(true);
-  obj.traverse(o=>{
-    if(o.isMesh){
-      o.frustumCulled=false;
-      /* the cache models carry their real colours as vertex colours; if a
-         material ever renders without them it comes out flat WHITE — pin
-         vertexColors on so the genuine colours always show */
-      const ms=Array.isArray(o.material)?o.material:[o.material];
-      for(const mm of ms){ if(mm){ mm.vertexColors=true; mm.color.set(0xffffff); mm.needsUpdate=true; } }
-      const mp=o.geometry&&o.geometry.morphAttributes?o.geometry.morphAttributes.position:null;
-      if(mp&&mp.length){ o.morphTargetInfluences=new Array(mp.length).fill(0); o.morphTargetDictionary={}; for(let i=0;i<mp.length;i++) o.morphTargetDictionary[i]=i; }
+function entEnsureTex(){
+  if(ENT.tex||!window.THREE) return;
+  try{ const t=new THREE.TextureLoader().load('assets/entities2/atlas.png'); if(THREE.SRGBColorSpace!==undefined) t.colorSpace=THREE.SRGBColorSpace; ENT.tex=t; }catch(e){}
+}
+function entGeo(off){
+  let g=ENT.geoCache[off]; if(g) return g;
+  const dv=new DataView(ENT.bin); let p=off;
+  const v=dv.getUint16(p,true); p+=2; const f=dv.getUint16(p,true); p+=2;
+  const verts=new Int16Array(v*3);
+  for(let i=0;i<v*3;i++){ verts[i]=dv.getInt16(p,true); p+=2; }
+  const groups=new Uint16Array(v);
+  for(let i=0;i<v;i++){ groups[i]=dv.getUint16(p,true); p+=2; }
+  const idx=new Uint16Array(f*3);
+  for(let i=0;i<f*3;i++){ idx[i]=dv.getUint16(p,true); p+=2; }
+  p+=f*2; /* per-face texture cells: uvs are already atlas-mapped */
+  const uv=new Uint16Array(f*6);
+  for(let i=0;i<f*6;i++){ uv[i]=dv.getUint16(p,true); p+=2; }
+  g={v,f,verts,groups,idx,uv};
+  ENT.geoCache[off]=g; return g;
+}
+function entSeq(id){
+  let s=ENT.seqCache[id]; if(s) return s;
+  const rec=ENT.json&&ENT.json.seqs[id]; if(!rec) return null;
+  const dv=new DataView(ENT.bin); let p=rec.off;
+  const nf=dv.getUint16(p,true); p+=2;
+  const frames=[]; let total=0;
+  for(let i=0;i<nf;i++){
+    const len=dv.getUint16(p,true); p+=2; total+=len;
+    const nt=dv.getUint16(p,true); p+=2;
+    const trs=[];
+    for(let t=0;t<nt;t++){
+      const type=dv.getUint8(p); p+=1;
+      const ng=dv.getUint16(p,true); p+=2;
+      const gs=[];
+      for(let gi=0;gi<ng;gi++){ gs.push(dv.getUint16(p,true)); p+=2; }
+      const x=dv.getInt16(p,true),y=dv.getInt16(p+2,true),z=dv.getInt16(p+4,true); p+=6;
+      trs.push({type,gs,x,y,z});
     }
-  });
-  const mixer=new THREE.AnimationMixer(obj);
-  const actions={};
-  for(const clip of proto.animations){ const a=mixer.clipAction(clip); a.enabled=true; actions[clip.name]=a; }
-  if(actions.idle){ actions.idle.setLoop(THREE.LoopRepeat,Infinity); }
-  if(actions.walk){ actions.walk.setLoop(THREE.LoopRepeat,Infinity); }
-  if(actions.attack){ actions.attack.setLoop(THREE.LoopOnce,1); actions.attack.clampWhenFinished=true; }
-  G3D.group.add(obj);
-  inst={obj,mixer,actions,cur:'',key,yaw:0,dying:0,matsCloned:false,lastPulse:-9,lx:0,lz:0};
+    frames.push({len,trs});
+  }
+  s={frames,total:Math.max(1,total),secs:Math.max(0.05,total*0.02)};
+  ENT.seqCache[id]=s; return s;
+}
+/* One cache frame applied to the merged model, exactly as the client's
+   animate() does: translators run IN ORDER over a working copy of the
+   base pose; the pivot (animOffset) is stateful across the translators
+   of one frame and type 0 recomputes it from the CURRENT vertices. */
+function entApplyFrame(inst,seq,fi,out){
+  out.set(inst.base);
+  const fr=seq.frames[fi]; if(!fr) return;
+  let ox=0, oy=0, oz=0;
+  for(let ti=0;ti<fr.trs.length;ti++){
+    const tr=fr.trs[ti];
+    if(tr.type===0){
+      let n=0, sx=0, sy=0, sz=0;
+      for(let gi=0;gi<tr.gs.length;gi++){ const vs=inst.gt.get(tr.gs[gi]); if(!vs) continue;
+        for(let vi=0;vi<vs.length;vi++){ const v=vs[vi]; sx+=out[v*3]; sy+=out[v*3+1]; sz+=out[v*3+2]; n++; } }
+      if(n>0){ ox=tr.x+Math.trunc(sx/n); oy=tr.y+Math.trunc(sy/n); oz=tr.z+Math.trunc(sz/n); }
+      else { ox=tr.x; oy=tr.y; oz=tr.z; }
+    } else if(tr.type===1){
+      for(let gi=0;gi<tr.gs.length;gi++){ const vs=inst.gt.get(tr.gs[gi]); if(!vs) continue;
+        for(let vi=0;vi<vs.length;vi++){ const v=vs[vi]; out[v*3]+=tr.x; out[v*3+1]+=tr.y; out[v*3+2]+=tr.z; } }
+    } else if(tr.type===2){
+      const az=(tr.z&255)*8, ax=(tr.x&255)*8, ay=(tr.y&255)*8;
+      const sz2=ENT_SIN[az], cz2=ENT_COS[az], sx2=ENT_SIN[ax], cx2=ENT_COS[ax], sy2=ENT_SIN[ay], cy2=ENT_COS[ay];
+      for(let gi=0;gi<tr.gs.length;gi++){ const vs=inst.gt.get(tr.gs[gi]); if(!vs) continue;
+        for(let vi=0;vi<vs.length;vi++){ const v=vs[vi];
+          let x=out[v*3]-ox, y=out[v*3+1]-oy, z=out[v*3+2]-oz;
+          if(az){ const t=Math.floor((sz2*y+cz2*x)/65536); y=Math.floor((cz2*y-sz2*x)/65536); x=t; }
+          if(ax){ const t=Math.floor((cx2*y-sx2*z)/65536); z=Math.floor((sx2*y+cx2*z)/65536); y=t; }
+          if(ay){ const t=Math.floor((sy2*z+cy2*x)/65536); z=Math.floor((cy2*z-sy2*x)/65536); x=t; }
+          out[v*3]=x+ox; out[v*3+1]=y+oy; out[v*3+2]=z+oz;
+        } }
+    } else if(tr.type===3){
+      for(let gi=0;gi<tr.gs.length;gi++){ const vs=inst.gt.get(tr.gs[gi]); if(!vs) continue;
+        for(let vi=0;vi<vs.length;vi++){ const v=vs[vi];
+          out[v*3]=Math.trunc((out[v*3]-ox)*tr.x/128)+ox;
+          out[v*3+1]=Math.trunc((out[v*3+1]-oy)*tr.y/128)+oy;
+          out[v*3+2]=Math.trunc((out[v*3+2]-oz)*tr.z/128)+oz;
+        } }
+    }
+    /* type 5 = alpha only: no vertex effect */
+  }
+}
+function entWritePose(inst,wa,wb,frac){
+  const pos=inst.geo.getAttribute('position').array;
+  for(let i=0;i<inst.tv;i++){
+    const a3=i*3;
+    pos[a3]=(wa[a3]+(wb[a3]-wa[a3])*frac)/128;
+    pos[a3+1]=-(wa[a3+1]+(wb[a3+1]-wa[a3+1])*frac)/128;
+    pos[a3+2]=(wa[a3+2]+(wb[a3+2]-wa[a3+2])*frac)/128;
+  }
+  inst.geo.getAttribute('position').needsUpdate=true;
+}
+function entPose(inst,seqId,t,loop){
+  const seq=seqId>0?entSeq(seqId):null;
+  if(!seq){ entWritePose(inst,inst.base,inst.base,0); return; }
+  let cyc=(t/0.02)%seq.total; if(cyc<0) cyc+=seq.total;
+  let acc=0, fi=0;
+  while(fi<seq.frames.length-1&&acc+seq.frames[fi].len<=cyc){ acc+=seq.frames[fi].len; fi++; }
+  const fl=seq.frames[fi].len||1;
+  const frac=Math.max(0,Math.min(1,(cyc-acc)/fl));
+  entApplyFrame(inst,seq,fi,inst.work);
+  let fj=fi+1; if(fj>=seq.frames.length) fj=loop?0:fi;
+  if(fj!==fi) entApplyFrame(inst,seq,fj,inst.workB); else inst.workB.set(inst.work);
+  entWritePose(inst,inst.work,inst.workB,frac);
+}
+/* Merge a part list ([{g: geoOffset, c: colorOffset}]) into ONE model:
+   corner-expanded geometry (per-face colours/uvs stay exact), per-vertex
+   group ids carried into merged group tables. */
+function entBuild(parts,sx,sy){
+  let tf=0; const gs=[];
+  for(let pi=0;pi<parts.length;pi++){ const g=entGeo(parts[pi].g); if(!g) return null; gs.push(g); tf+=g.f; }
+  const tv=tf*3;
+  const base=new Int32Array(tv*3), grp=new Uint16Array(tv);
+  const pos=new Float32Array(tv*3), col=new Float32Array(tv*3), uvA=new Float32Array(tv*2);
+  let co=0;
+  for(let pi=0;pi<parts.length;pi++){
+    const g=gs[pi]; const cols=new Uint8Array(ENT.bin,parts[pi].c,g.f*3);
+    for(let f=0;f<g.f;f++) for(let k=0;k<3;k++){
+      const src=g.idx[f*3+k], ci=co+f*3+k;
+      base[ci*3]=g.verts[src*3]; base[ci*3+1]=g.verts[src*3+1]; base[ci*3+2]=g.verts[src*3+2];
+      grp[ci]=g.groups[src];
+      col[ci*3]=cols[f*3]/255; col[ci*3+1]=cols[f*3+1]/255; col[ci*3+2]=cols[f*3+2]/255;
+      uvA[ci*2]=g.uv[f*6+k*2]/65535; uvA[ci*2+1]=g.uv[f*6+k*2+1]/65535;
+    }
+    co+=g.f*3;
+  }
+  const gt=new Map();
+  for(let i=0;i<tv;i++){ const gr=grp[i]; let a=gt.get(gr); if(!a){ a=[]; gt.set(gr,a); } a.push(i); }
+  const geo=new THREE.BufferGeometry();
+  const posAttr=new THREE.BufferAttribute(pos,3); posAttr.setUsage(THREE.DynamicDrawUsage);
+  geo.setAttribute('position',posAttr);
+  geo.setAttribute('color',new THREE.BufferAttribute(col,3));
+  geo.setAttribute('uv',new THREE.BufferAttribute(uvA,2));
+  const mat=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide});
+  if(ENT.tex) mat.map=ENT.tex;
+  const mesh=new THREE.Mesh(geo,mat); mesh.frustumCulled=false;
+  const obj=new THREE.Group(); obj.add(mesh); obj.scale.set(sx,sy,sx); G3D.group.add(obj);
+  const inst={obj,mesh,geo,mat,base,grp,gt,tv,work:new Int32Array(tv*3),workB:new Int32Array(tv*3),cur:-2,seqT:0,atkT:0,attacking:false,lastPulse:-9,yaw:0,sm:0,dying:0,lx:0,lz:0,gy:0,esc:1,sx,sy,clips:null,key:''};
+  entWritePose(inst,base,base,0);
   return inst;
 }
-function g3dReleaseModel(inst){
-  try{ inst.mixer.stopAllAction(); }catch(e){}
-  inst.obj.visible=false; inst.cur='';
-  (MDL.pools[inst.key]||(MDL.pools[inst.key]=[])).push(inst);
+function entDispose(inst){
+  try{ G3D.group.remove(inst.obj); }catch(e){}
+  try{ inst.geo.dispose(); inst.mat.dispose(); }catch(e){}
 }
-function g3dSetClip(inst,name,timeScale){
-  const a=inst.actions[name]; if(!a) return false;
-  if(inst.cur===name){ a.timeScale=timeScale||1; return true; }
-  const old=inst.actions[inst.cur];
-  if(old&&old!==a){ old.fadeOut(0.12); }
-  a.reset(); a.setEffectiveWeight(1); a.timeScale=timeScale||1; a.fadeIn(0.12); a.play();
-  inst.cur=name; return true;
+/* ---- the player model, composed the client's way ---- */
+const HERO_BASE_MODELS={warrior:{helm:"Dharok's helm",torso:"Dharok's platebody",legs:"Dharok's platelegs"},ranger:{helm:"Karil's coif",torso:"Karil's leathertop",legs:"Karil's leatherskirt"},mage:{helm:"Ancestral hat",torso:"Ancestral robe top",legs:"Ancestral robe bottom"}};
+function entItemParts(name){ const it=name&&ENT.json?ENT.json.items[name]:null; return it?it.parts:null; }
+function entHeroParts(){
+  const P=G.P, gear=P.gear||{};
+  const base=HERO_BASE_MODELS[P.hero.id]||{};
+  const parts=[];
+  const worn=(it)=>it?(it.baseName||it.name||null):null;
+  const add=(name)=>{ const ps=entItemParts(name); if(ps){ for(let i=0;i<ps.length;i++) parts.push(ps[i]); return true; } return false; };
+  /* head: equipped helm's worn models, else the hero set's helm, else the kit head */
+  if(!add(worn(gear.helm))&&!add(base.helm)) parts.push(ENT.json.kit.head);
+  /* torso: an equipped/set torso item's models cover torso AND arms (that
+     is how the cache item models are authored); the bare kit torso needs
+     the kit arms alongside */
+  const torsoName=worn(gear.torso)||base.torso;
+  if(!add(torsoName)){ parts.push(ENT.json.kit.torso); parts.push(ENT.json.kit.arms); }
+  /* hands: equipped gloves, else kit hands */
+  if(!add(worn(gear.gloves))) parts.push(ENT.json.kit.hands);
+  /* legs: the game has no legs equipment slot — the hero set's legs, else kit legs */
+  if(!add(base.legs)) parts.push(ENT.json.kit.legs);
+  /* feet: equipped boots, else kit feet */
+  if(!add(worn(gear.boots))) parts.push(ENT.json.kit.feet);
+  /* amulet and weapon ride additively on the merged model — the weapon's
+     vertices belong to the hand's vertex groups, so the animation frames
+     carry it exactly as the client carries it */
+  add(worn(gear.amulet));
+  add(worn(gear.weapon));
+  return parts;
 }
-/* Per-type facing calibration (stage 5): the cache exports' rest facing
-   is the model's local -Z, while the drive math below assumes +Z — so
-   every type carries a PI yaw offset and the model's front leads its
-   travel. Verified per type against the live models (turntable pass);
-   the table is published with the stage-5 notes. */
-const MDL_YAW={warrior:Math.PI,ranger:Math.PI,mage:Math.PI,chicken:Math.PI,rat:Math.PI,goblin:Math.PI,cow:Math.PI,spider:Math.PI,skeleton:Math.PI,zombie:Math.PI,wolf:Math.PI,hillgiant:Math.PI,mossgiant:Math.PI,blackknight:Math.PI,lesserdemon:Math.PI,greaterdemon:Math.PI,kbd:Math.PI};
-function g3dDriveModel(inst,o,isPlayer,dt){
+function entHeroSig(){
+  const P=G.P; if(!P) return '';
+  const g=P.gear||{}; const nm=(it)=>it?(it.baseName||it.name||''):'';
+  return P.hero.id+'|'+nm(g.helm)+'|'+nm(g.torso)+'|'+nm(g.gloves)+'|'+nm(g.boots)+'|'+nm(g.amulet)+'|'+nm(g.weapon);
+}
+/* weapon class -> cache attack sequence (measured bindings, see header) */
+const ENT_CLASS_SEQ={sword:390,knife:386,axe:393,greatsword:1665,bow:426,crossbow:4230,staff:1162,fist:422,whip:1658,godsword:7054,halberd:407,rapier:7618,scythe:8056};
+function entWeaponClass(item){
+  if(!item) return 'fist';
+  const nm=item.baseName||item.name||''; const low=nm.toLowerCase();
+  if(low.indexOf('whip')>=0) return 'whip';
+  if(low.indexOf('godsword')>=0) return 'godsword';
+  if(low.indexOf('halberd')>=0) return 'halberd';
+  if(low.indexOf('rapier')>=0) return 'rapier';
+  if(low.indexOf('scythe')>=0) return 'scythe';
+  if(low.indexOf('crossbow')>=0||low.indexOf('ballista')>=0) return 'crossbow';
+  if(low.indexOf('blowpipe')>=0) return 'bow';
+  let arch=item.arch||(typeof WEAPON_ARCH!=='undefined'?WEAPON_ARCH[nm]:null);
+  if(!arch) arch=(item.style==='r')?'bow':(item.style==='s')?'staff':'sword';
+  return ENT_CLASS_SEQ[arch]?arch:'sword';
+}
+function entPlayerAttackSeq(){
+  const it=(typeof G!=='undefined'&&G&&G.P&&G.P.gear)?G.P.gear.weapon:null;
+  return ENT_CLASS_SEQ[entWeaponClass(it)]||390;
+}
+function entClaim(key){
+  const pool=ENT.pools[key]||(ENT.pools[key]=[]);
+  let inst=pool.pop();
+  if(inst){
+    inst.obj.visible=true; inst.dying=0; inst.attacking=false; inst.cur=-2; inst.seqT=0;
+    inst.mat.opacity=1; inst.mat.transparent=false;
+    inst.obj.rotation.set(0,inst.yaw||0,0);
+    inst.obj.scale.set(inst.sx*(inst.esc||1),inst.sy*(inst.esc||1),inst.sx*(inst.esc||1));
+    entWritePose(inst,inst.base,inst.base,0);
+    return inst;
+  }
+  const def=ENT.json.npcs[key]; if(!def) return null;
+  inst=entBuild(def.parts,def.sx,def.sy);
+  if(!inst) return null;
+  inst.key=key; inst.clips=def.clips;
+  return inst;
+}
+function entRelease(inst){
+  inst.obj.visible=false; inst.cur=-2; inst.attacking=false;
+  (ENT.pools[inst.key]||(ENT.pools[inst.key]=[])).push(inst);
+}
+function entDrive(inst,o,isPlayer,dt){
   const P=G.P;
   const gx=w2sx(o.x), gz=w2sz(o.y);
   const dx=gx-inst.lx, dz=gz-inst.lz;
   const dist=Math.hypot(dx,dz);
-  const speed=dt>0?dist/dt:0; // scene units (tiles) per second
-  /* locomotion state from a SMOOTHED speed: a single-frame delta flickers
-     (frame pacing vs the follow camera) and every flicker restarted the
-     walk clip at frame zero — the hero read as gliding, statue-still.
-     The smoothed signal holds the walk cycle running while moving. */
+  const speed=dt>0?dist/dt:0;
   inst.sm=inst.sm===undefined?speed:(inst.sm+(speed-inst.sm)*Math.min(1,dt*9));
   const moving=inst.sm>0.3||dist>0.004;
-  if(inst.dying){ return; }
+  if(inst.dying) return;
   const gy=groundH(gx,gz); inst.gy=gy;
   inst.obj.position.set(gx,gy,gz);
-  /* The Greater Demon Champion is the greater demon's own cache model
-     at the sim's boss size (ENEMIES.champion scale 1.9 — its demon base
-     carries no separate NPC definition in the cache to compose from);
-     every other entity renders at its definition's true size. */
+  /* the Greater Demon Champion is the greater demon's own cache model at
+     the sim's boss size (its base carries no separate NPC definition in
+     the cache to compose from — the named exception, as before) */
   const esc=isPlayer?1:((o.type==='champion')?1.9:1);
-  if(inst.oscale!==esc){ inst.oscale=esc; inst.obj.scale.setScalar(esc); }
-  // facing: movement direction, else (enemies) the player, else (player) walkDir/face
+  if(inst.esc!==esc){ inst.esc=esc; inst.obj.scale.set(inst.sx*esc,inst.sy*esc,inst.sx*esc); }
   let tyaw=null;
   if(moving) tyaw=Math.atan2(dx,dz);
   else if(!isPlayer) tyaw=Math.atan2(w2sx(P.x)-gx,w2sz(P.y)-gz);
@@ -3280,76 +3500,98 @@ function g3dDriveModel(inst,o,isPlayer,dt){
     let d=tyaw-inst.yaw;
     while(d>Math.PI) d-=Math.PI*2; while(d<-Math.PI) d+=Math.PI*2;
     inst.yaw+=d*Math.min(1,dt*11);
-    inst.obj.rotation.y=inst.yaw+(MDL_YAW[inst.key]||0);
+    inst.obj.rotation.y=inst.yaw+(ENT_YAW[inst.key]||0);
   }
   inst.lx=gx; inst.lz=gz;
-  // attack: a fresh combat pulse plays the attack clip once, timed so the
-  // swing lands with the sim's hitsplat (both fire on the same frame)
+  /* attack: a fresh combat pulse plays the attack sequence once, timed
+     so the swing lands with the sim's hitsplat (same frame as before) */
   const pulse=isPlayer?P.atkPulse:o.atkPulse;
+  const atkSeq=isPlayer?entPlayerAttackSeq():(inst.clips&&inst.clips.attack?inst.clips.attack:-1);
   if(pulse!==undefined&&pulse!==inst.lastPulse){
     inst.lastPulse=pulse;
-    if(inst.actions.attack){ const a=inst.actions.attack; const old=inst.actions[inst.cur]; if(old&&old!==a) old.fadeOut(0.05); a.reset(); a.setEffectiveWeight(1); a.fadeIn(0.05); a.play(); inst.cur='attack'; inst.atkT=0; }
+    if(atkSeq>0){ inst.cur=atkSeq; inst.atkT=0; inst.attacking=true; }
   }
-  if(inst.cur==='attack'){
-    inst.atkT=(inst.atkT||0)+dt;
-    const dur=inst.actions.attack?inst.actions.attack.getClip().duration:0.5;
-    if(inst.atkT<dur){ inst.mixer.update(dt); return; }
-    inst.cur='';
+  if(inst.attacking){
+    const s=entSeq(inst.cur); const dur=s?s.secs:0.5;
+    inst.atkT+=dt;
+    if(inst.atkT<dur){ entPose(inst,inst.cur,inst.atkT,false); return; }
+    inst.attacking=false; inst.cur=-2;
   }
+  const clips=inst.clips||{idle:808,walk:819};
+  let want, ts=1;
   if(moving){
-    // speed-match the walk cycle to the tile rate: OSRS walk covers
-    // roughly a tile per cycle for humanoids, so at 1 tile / 0.6s the
-    // clip plays at its natural rate; the SMOOTHED speed drives the
-    // scale so frame jitter never makes the feet stutter or slide.
-    const wc=inst.actions.walk?inst.actions.walk.getClip().duration:0.6;
-    const ts=Math.max(0.2,Math.min(2.4,inst.sm*Math.max(0.3,wc)/1.0));
-    if(!g3dSetClip(inst,'walk',ts)) g3dSetClip(inst,'idle',1);
+    want=clips.walk>0?clips.walk:clips.idle;
+    const ws=want>0?entSeq(want):null; const wc=ws?ws.secs:0.6;
+    /* speed-match the walk cycle to the tile rate, driven by the smoothed
+       speed so frame jitter never makes the feet stutter or slide */
+    ts=Math.max(0.2,Math.min(2.4,inst.sm*Math.max(0.3,wc)/1.0));
   } else {
-    if(!g3dSetClip(inst,'idle',1)) g3dSetClip(inst,'walk',1);
+    want=clips.idle>0?clips.idle:clips.walk;
   }
-  inst.mixer.update(dt);
+  if(inst.cur!==want){ inst.cur=want; inst.seqT=0; }
+  inst.seqT+=dt*ts;
+  entPose(inst,inst.cur,inst.seqT,true);
 }
-function g3dSyncModels(cam){
+function entSyncModels(cam){
+  entEnsureTex();
   const now=performance.now();
-  const dt=Math.min(0.06,MDL.lastT?(now-MDL.lastT)/1000:0.016); MDL.lastT=now;
+  const dt=Math.min(0.06,ENT.lastT?(now-ENT.lastT)/1000:0.016); ENT.lastT=now;
   const P=G.P;
-  MDL.covered.clear();
-  // player
-  if(!MDL.playerInst){ MDL.playerInst=g3dClaimModel(P.hero.id); if(MDL.playerInst){ MDL.playerInst.lx=w2sx(P.x); MDL.playerInst.lz=w2sz(P.y); } }
-  if(MDL.playerInst){ MDL.covered.add(P); g3dDriveModel(MDL.playerInst,P,true,dt); }
-  // enemies + allies
+  ENT.covered.clear();
+  /* player: whenever the hero or any equipped item changes, the one
+     player model is re-merged with the new composition — the client's
+     dynamic appearance, checked by signature every frame */
+  const sig=entHeroSig();
+  if(ENT.playerInst&&ENT.heroSig!==sig){ entDispose(ENT.playerInst); ENT.playerInst=null; }
+  if(!ENT.playerInst){
+    ENT.playerInst=entBuild(entHeroParts(),1,1);
+    if(ENT.playerInst){
+      ENT.playerInst.key=P.hero.id;
+      ENT.playerInst.clips={idle:ENT.json.heroClips.idle,walk:ENT.json.heroClips.walk};
+      ENT.playerInst.lx=w2sx(P.x); ENT.playerInst.lz=w2sz(P.y);
+      ENT.heroSig=sig;
+    }
+  }
+  if(ENT.playerInst){ ENT.covered.add(P); entDrive(ENT.playerInst,P,true,dt); }
   const seen=new Set();
-  const drive=(o,key,isAlly)=>{
-    if(!key) return;
-    let inst=MDL.active.get(o);
-    if(!inst){ inst=g3dClaimModel(key); if(!inst) return; inst.lx=w2sx(o.x); inst.lz=w2sz(o.y); MDL.active.set(o,inst); }
-    seen.add(o); MDL.covered.add(o);
-    g3dDriveModel(inst,o,false,dt);
+  const drive=(o)=>{
+    const key=ENT_ENEMY[o.spr]; if(!key) return;
+    let inst=ENT.active.get(o);
+    if(!inst){
+      inst=entClaim(key);
+      if(!inst){
+        if(!ENT.warned[key]){ ENT.warned[key]=1; if(window.console) console.warn('ENT: no merged model for '+key+' - billboard fallback for this entity'); }
+        return;
+      }
+      inst.lx=w2sx(o.x); inst.lz=w2sz(o.y); ENT.active.set(o,inst);
+    }
+    seen.add(o); ENT.covered.add(o);
+    entDrive(inst,o,false,dt);
   };
-  for(const e of G.enemies) drive(e,MDL_ENEMY[e.spr],false);
-  for(const a of G.allies) drive(a,MDL_ENEMY[a.spr],true);
-  // sweep: owners that left the sim -> death fall/fade, then release
-  for(const entry of Array.from(MDL.active)){
+  for(const e of G.enemies) drive(e);
+  for(const a of G.allies) drive(a);
+  /* sweep: owners that left the sim -> death fall/fade, then release.
+     Materials are per-instance in this system, so the fade cannot leak
+     into a pooled model's next life. */
+  for(const entry of Array.from(ENT.active)){
     const o=entry[0], inst=entry[1];
     if(seen.has(o)) continue;
-    if(!inst.dying){
-      inst.dying=0.0001;
-      if(!inst.matsCloned){ inst.matsCloned=true; inst.obj.traverse(m=>{ if(m.isMesh){ m.material=Array.isArray(m.material)?m.material.map(x=>x.clone()):m.material.clone(); } }); }
-      try{ inst.mixer.stopAllAction(); }catch(e){}
-    }
+    if(!inst.dying) inst.dying=0.0001;
     inst.dying+=dt;
     const k=Math.min(1,inst.dying/0.38);
     inst.obj.rotation.x=-k*Math.PI*0.46;
-    inst.obj.position.y=(inst.gy||MAP3D.groundY)-inst.dying*0.25;
-    const op=Math.max(0,1-inst.dying/0.55);
-    inst.obj.traverse(m=>{ if(m.isMesh){ const ms=Array.isArray(m.material)?m.material:[m.material]; for(const mm of ms){ mm.transparent=true; mm.opacity=op; } } });
+    inst.obj.position.y=(inst.gy||0)-inst.dying*0.25;
+    inst.mat.transparent=true; inst.mat.opacity=Math.max(0,1-inst.dying/0.55);
     if(inst.dying>0.58){
-      inst.obj.rotation.x=0;
-      inst.obj.traverse(m=>{ if(m.isMesh){ const ms=Array.isArray(m.material)?m.material:[m.material]; for(const mm of ms){ mm.opacity=1; } } });
-      MDL.active.delete(o); g3dReleaseModel(inst);
+      inst.obj.rotation.x=0; inst.mat.opacity=1; inst.mat.transparent=false;
+      ENT.active.delete(o); entRelease(inst);
     }
   }
 }
+/* preload the entity data at page load — by the time a run starts, the
+   merged-model data is already here and the first frame is a real model,
+   never a billboard flash */
+try{ entLoad(); }catch(e){}
 
 /* ================= PHASE 2: CACHE COLLISION + TILE PATHING (3D mode) =====
    Per-tile flags exported from the same cache (assets/varrock/collision.json,
