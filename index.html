@@ -43,20 +43,38 @@
   canvas#game{position:absolute;inset:0;width:100%;height:100%;display:block;background:#5d8f3e;touch-action:none;user-select:none;-webkit-user-select:none;}
 
   /* ---------- sidebar gameframe: minimap + orbs + red-stone tabs ---------- */
-  #sidebar{width:228px;flex:none;background:linear-gradient(180deg,#4e4433,#3d3423);border-left:3px solid #100c07;box-shadow:inset 2px 0 0 #71624c;display:flex;flex-direction:column;padding:6px;gap:6px;overflow-y:auto;overflow-x:hidden;}
+  /* Sidebar = the client's own side column, composed from cache 1557
+     interface 548: pillar strips 1033 (left) / 1035 (right) over their
+     shaft tiles, panel background sprite 1031 tiled behind everything. */
+  #sidebar{width:236px;flex:none;background-color:#3a3122;background-image:url(assets/ui/gf-pillar-l.png),url(assets/ui/gf-pillar-r.png),url(assets/ui/gf-pillar-tile-l.png),url(assets/ui/gf-pillar-tile-r.png),url(assets/ui/gf-panel.png);background-position:left top,right top,left top,right top,center top;background-repeat:no-repeat,no-repeat,repeat-y,repeat-y,repeat;background-size:31px auto,28px auto,31px auto,28px auto,190px 261px;display:flex;flex-direction:column;padding:6px 26px;gap:6px;overflow-y:auto;overflow-x:hidden;}
   #mmWrap{display:flex;gap:4px;align-items:flex-start;justify-content:center;}
   #orbs{display:flex;flex-direction:column;gap:7px;padding-top:10px;}
   .orb{display:flex;align-items:center;gap:4px;}
   .orb img{width:30px;height:30px;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.6));}
   .orb span{font-weight:800;font-size:15px;color:#3fd93f;text-shadow:1px 1px 0 #000;min-width:24px;}
   .orb span.low{color:#ff5147;} .orb span.mid{color:#ffe83d;}
-  #mmBox{position:relative;width:148px;height:148px;flex:none;}
-  #minimap{width:148px;height:148px;border-radius:50%;border:3px solid #100c07;box-shadow:0 0 0 2px #71624c,0 3px 10px rgba(0,0,0,.6);background:#20330f;display:block;}
-  #compass{position:absolute;top:-9px;left:50%;transform:translateX(-50%);width:34px;height:34px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.7));z-index:2;}
-  #tabs{display:flex;gap:4px;}
-  .tab{flex:1;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 1px 3px;background:linear-gradient(180deg,#7a4a3a,#5f3626);border:2px solid #100c07;border-radius:3px;color:#ffd75e;font-family:Arial,Helvetica,sans-serif;font-weight:800;font-size:9.5px;text-shadow:1px 1px 0 #000;box-shadow:inset 1px 1px 0 rgba(255,190,150,.35),inset -1px -1px 0 rgba(0,0,0,.4);}
-  .tab img{width:18px;height:18px;object-fit:contain;}
-  .tab.active{background:linear-gradient(180deg,#a03c2a,#7e2f1f);color:#fff;box-shadow:inset 1px 1px 0 rgba(255,210,170,.5),inset -1px -1px 0 rgba(0,0,0,.45),0 0 8px rgba(255,90,50,.35);}
+  /* Minimap cluster composed exactly as interface 548 lays it out:
+     backing disc sprite 1183 at (+25,+5), the map circle (146 across)
+     centred on it, surround ring sprite 1182 over the top, and the
+     compass overlapping the ring's top-left, as in the client. All
+     inner geometry is %-based so the box scales as one unit. */
+  #mmBox{position:relative;width:172px;height:156px;flex:none;}
+  #mmBack{position:absolute;left:14.53%;top:3.21%;width:84.30%;height:96.79%;}
+  #minimap{position:absolute;left:13.95%;top:4.49%;width:84.88%;height:93.59%;border-radius:50%;background:#000;display:block;}
+  #mmRing{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;}
+  #compass{position:absolute;top:-2px;left:4px;width:34px;height:34px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.7));z-index:2;}
+  /* Tabs: the client's red-stone tab row (interface 548) — end caps
+     1028/1029, mid stone 1030, the brighter selected stone 1181, and
+     the genuine tab icons (908 options, 900 inventory, 898 stats,
+     901 worn equipment). Icon-only, like the client. */
+  #tabs{display:flex;gap:0;}
+  .tab{flex:1 1 0;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;background:url(assets/ui/gf-tab.png) center/100% 100% no-repeat;border:0;border-radius:0;box-shadow:none;}
+  .tab:first-child{background-image:url(assets/ui/gf-tab-l.png);}
+  .tab:last-child{background-image:url(assets/ui/gf-tab-r.png);}
+  .tab img{height:27px;width:auto;max-width:32px;object-fit:contain;pointer-events:none;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.55));}
+  .tab.active{background-image:url(assets/ui/gf-tab-active.png);}
+  .tab:first-child.active{background-image:url(assets/ui/gf-tab-l.png);filter:brightness(1.28);}
+  .tab:last-child.active{background-image:url(assets/ui/gf-tab-r.png);filter:brightness(1.28);}
   /* The tab body is the sidebar's scroller, configured EXACTLY like the
      device-verified menu scroller (#startScreen): a column flex box with
      main-axis overflow-y:auto and pan-x pan-y, whose panel children are
@@ -82,6 +100,10 @@
   /* ---------- top HUD ---------- */
   #hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:8px 10px;pointer-events:none;gap:8px;}
   .panel{background:linear-gradient(180deg,#4e4433,#443a2b);border:2px solid var(--osrs-edge);border-radius:3px;box-shadow:inset 0 0 0 2px var(--osrs-bevel),inset 0 0 0 4px var(--osrs-inner),0 3px 10px rgba(0,0,0,.55);padding:6px 9px;}
+  /* Inside the sidebar there is no panel chrome at all in the client:
+     tab content draws directly onto the panel background sprite 1031
+     that the sidebar itself wears. */
+  #tabBody .panel{background:none;border:0;border-radius:0;box-shadow:none;padding:2px 0 6px;}
   #hudLeft{min-width:230px;max-width:320px;flex:0 1 300px;}
   .barRow{display:flex;align-items:center;gap:6px;margin:2px 0;}
   .barLabel{font-weight:800;font-size:11px;color:var(--gold);width:26px;text-shadow:1px 1px 0 #000;}
@@ -99,9 +121,13 @@
   .hudStat{font-size:12px;color:var(--parch);text-shadow:1px 1px 0 #000;}
   .hudStat b{color:var(--gold);}
   #hudBtns{position:absolute;top:86px;right:10px;display:flex;flex-direction:column;gap:6px;pointer-events:auto;}
-  .sbtn{pointer-events:auto;cursor:pointer;background:linear-gradient(180deg,#6b5b40,#52432b);border:2px solid var(--osrs-edge);border-radius:3px;color:#fff;font-weight:700;font-size:12px;padding:6px 10px;box-shadow:inset 1px 1px 0 #97835f,inset -1px -1px 0 #33291a;text-align:center;text-shadow:1px 1px 0 #000;font-family:Arial,Helvetica,sans-serif;}
-  .sbtn:hover{color:var(--yellow);}
-  .sbtn:active{box-shadow:inset -1px -1px 0 #97835f,inset 1px 1px 0 #33291a;}
+  /* Buttons wear the client's own button sprites as a stretchable
+     frame (border-image, centre filled): 3051 stone for the small
+     sidebar buttons, 3057 red stone for the menu buttons — the same
+     sprites interface 162 composes its buttons from. */
+  .sbtn{pointer-events:auto;cursor:pointer;background:none;border:6px solid transparent;border-image-source:url(assets/ui/gf-btn-stone.png);border-image-slice:6 fill;border-image-width:6px;border-image-repeat:stretch;color:#fff;font-weight:700;font-size:12px;padding:3px 9px;text-align:center;text-shadow:1px 1px 0 #000;font-family:Arial,Helvetica,sans-serif;}
+  .sbtn:hover{color:var(--yellow);filter:brightness(1.15);}
+  .sbtn:active{filter:brightness(.9);}
 
   /* ---------- equipment panel ---------- */
   #equipPanel{width:100%;}
@@ -128,7 +154,9 @@
 
   /* ---------- overlays ---------- */
   .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,7,3,.72);z-index:90;padding:14px;overflow:auto;}
-  .card{background:linear-gradient(180deg,#4e4433,#413725);border:3px solid var(--osrs-edge);border-radius:4px;box-shadow:inset 0 0 0 2px var(--osrs-bevel),inset 0 0 0 5px var(--osrs-inner),0 10px 40px rgba(0,0,0,.7);max-width:860px;width:100%;padding:22px 26px;text-align:center;max-height:94dvh;overflow:auto;}
+  /* Overlay cards wear the same panel stone (sprite 1031, tiled as the
+     client tiles it behind its large interfaces) with a dark edge. */
+  .card{background:url(assets/ui/gf-panel.png) #3a3122;border:3px solid var(--osrs-edge);border-radius:4px;box-shadow:inset 0 0 0 2px #241c10,inset 0 0 70px rgba(0,0,0,.5),0 10px 40px rgba(0,0,0,.7);max-width:860px;width:100%;padding:22px 26px;text-align:center;max-height:94dvh;overflow:auto;}
   .card h1{font-family:Georgia,serif;font-weight:800;font-size:34px;margin:0 0 2px;color:var(--gold);text-shadow:2px 2px 0 #000;letter-spacing:1px;}
   .card h2{font-family:Georgia,serif;font-weight:800;font-size:26px;margin:0 0 8px;color:var(--gold);text-shadow:2px 2px 0 #000;}
   .card p{color:var(--parch);font-size:15px;line-height:1.45;margin:6px 0;}
@@ -139,9 +167,9 @@
   .heroCard h3{margin:6px 0 2px;font-family:Georgia,serif;color:#fff;font-size:17px;}
   .heroCard p{font-size:12.5px;margin:2px 0;color:var(--parch-dim);}
   .heroCard .wname{color:var(--rare);font-weight:800;font-size:13px;}
-  .btn{cursor:pointer;display:inline-block;background:linear-gradient(180deg,#6f5c40,#584729);border:2px solid var(--osrs-edge);border-radius:3px;color:#fff;font-family:Georgia,'Times New Roman',serif;font-weight:800;font-size:16px;padding:10px 26px;box-shadow:inset 1px 1px 0 #9a865f,inset -1px -1px 0 #2e2413,0 3px 0 #100c07;text-shadow:1px 1px 0 #000;margin:6px 4px;}
+  .btn{cursor:pointer;display:inline-block;background:none;border:7px solid transparent;border-image-source:url(assets/ui/gf-btn-red.png);border-image-slice:7 fill;border-image-width:7px;border-image-repeat:stretch;color:#fff;font-family:Georgia,'Times New Roman',serif;font-weight:800;font-size:16px;padding:5px 22px;text-shadow:1px 1px 0 #000;margin:6px 4px;}
   .btn:hover{filter:brightness(1.18);color:var(--yellow);}
-  .btn:active{transform:translateY(2px);box-shadow:inset 1px 1px 0 #2e2413,inset -1px -1px 0 #9a865f;}
+  .btn:active{filter:brightness(.9);}
   .btn.small{font-size:13px;padding:7px 16px;}
   .keys{font-size:13px;color:var(--parch-dim);}
   .keys b{color:var(--parch);background:#241a0e;border:1px solid #57462f;border-bottom-width:3px;border-radius:4px;padding:0 6px;font-family:inherit;}
@@ -204,7 +232,7 @@
   #play3dMsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;font-family:Georgia,serif;font-size:19px;color:var(--gold);text-shadow:2px 2px 0 #000;pointer-events:none;z-index:4;}
   #play3dBack{position:absolute;top:10px;left:10px;z-index:6;margin:0;}
   #hud{z-index:15;}
-  .btn.armed{border-color:var(--gold);color:var(--yellow);box-shadow:0 0 14px rgba(255,215,94,.55),inset 1px 1px 0 #9a865f,inset -1px -1px 0 #2e2413;}
+  .btn.armed{color:var(--yellow);filter:brightness(1.25) drop-shadow(0 0 9px rgba(255,215,94,.8));}
 
   /* ---------- UI pass: no top-left overlay, orb rings, run line, collapsible sidebar ---------- */
   /* The old top-left HUD block (bars/timer/kills over the game view) is gone
@@ -220,8 +248,8 @@
   /* Anchored top-centre of the view: in the CSS-rotated phone frame that
      edge is the phone's right edge — clear of the Android gesture bar
      that lives on the frame's right edge (the phone's bottom). */
-  #sideToggle{position:absolute;left:50%;top:0;transform:translateX(-50%);z-index:62;width:56px;height:21px;padding:0;cursor:pointer;background:linear-gradient(180deg,#7a4a3a,#5f3626);border:2px solid #100c07;border-top:none;border-radius:0 0 4px 4px;color:#ffd75e;font-size:11px;font-weight:800;box-shadow:inset 1px 1px 0 rgba(255,190,150,.35);touch-action:none;}
-  #sideToggle:active{box-shadow:inset -1px -1px 0 rgba(255,190,150,.35);}
+  #sideToggle{position:absolute;left:50%;top:0;transform:translateX(-50%);z-index:62;width:56px;height:21px;padding:0;cursor:pointer;background:url(assets/ui/gf-tab.png) center/100% 100% no-repeat;border:0;border-radius:0;color:#ffd75e;font-size:11px;font-weight:800;touch-action:none;}
+  #sideToggle:active{filter:brightness(1.3);}
   body.sideHidden #sidebar{display:none;}
   /* In 3D play the joystick layer must never intercept taps (click-to-move
      owns the surface); it stays live for the classic 2D game. */
@@ -280,7 +308,11 @@
   #sidebar{padding-bottom:14px;}
 
   /* ---------- chatbox (OSRS style message log) ---------- */
+  /* Chatbox: the client's own composition (interface 162) — the stone
+     row sprite 1018 across the top, messages over the translucent dark
+     fill the client draws behind its chat area. */
   #chatbox{position:absolute;left:0;bottom:0;width:min(360px,72vw);background:rgba(0,0,0,.52);border:2px solid rgba(0,0,0,.65);box-shadow:inset 0 0 0 1px rgba(113,98,76,.5);padding:5px 8px;pointer-events:none;z-index:24;font-size:13px;font-weight:700;line-height:1.45;color:var(--yellow);text-shadow:1px 1px 0 #000;max-height:132px;overflow:hidden;display:none;}
+  #chatbox::before{content:'';display:block;height:23px;margin:-5px -8px 4px;background:url(assets/ui/gf-chat-top.png) left top/auto 23px repeat-x;}
   #chatbox div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   #chatbox .cWhite{color:#fff;} #chatbox .cCyan{color:#00ffff;} #chatbox .cGreen{color:#4dff6a;} #chatbox .cRed{color:#ff5147;} #chatbox .cPurp{color:#e08cff;}
 
@@ -302,16 +334,15 @@
   #bossBar .bar{height:16px;}
   #bossName{text-align:center;font-family:Georgia,serif;font-weight:800;color:#ff6b6b;text-shadow:2px 2px 0 #000;font-size:15px;letter-spacing:1px;}
   @media (max-width:900px){
-    #sidebar{width:178px;padding:5px;gap:5px;}
-    #mmBox{width:108px;height:108px;}
-    #minimap{width:108px;height:108px;}
-    #compass{width:28px;height:28px;top:-7px;}
+    #sidebar{width:186px;padding:5px 3px;gap:5px;background-image:url(assets/ui/gf-panel.png);background-position:center top;background-repeat:repeat;background-size:190px 261px;}
+    #mmBox{width:129px;height:117px;}
+    #compass{width:26px;height:26px;left:3px;top:-2px;}
     .orb img{width:24px;height:24px;}
     .orbRing img{width:24px;height:24px;}
     .orb span{font-size:14px;min-width:22px;}
     #orbs{gap:5px;padding-top:6px;}
     #blessIcons img{width:15px;height:15px;}
-    .tab{font-size:8.5px;} .tab img{width:16px;height:16px;}
+    .tab img{height:22px;}
     #hudLeft{min-width:0;flex:1;}
     #hudRight{display:none;}
     #timer{font-size:17px;}
@@ -404,27 +435,34 @@
   #loadBarFill{height:100%;width:0%;background:linear-gradient(180deg,#e33,#a00 55%,#7d0000);transition:width .18s ease-out;}
   #loadPct{margin-top:8px;color:#cfc4a5;font-family:Georgia,serif;font-size:15px;letter-spacing:2px;text-shadow:1px 1px 0 #000;}
   .menuLogo{width:min(560px,94%);height:auto;display:block;margin:0 auto 4px;}
-  /* ---- hub / inventory / bank / shop (Canifis update) ---- */
-  #invGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:6px;}
-  .invSlot{position:relative;aspect-ratio:1/1;background:#3e3529;border:2px solid #57492f;box-shadow:inset 1px 1px 0 #241c10,inset -1px -1px 0 #6b5a3e;border-radius:3px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:2px;}
-  .invSlot.empty{cursor:default;opacity:.55;}
-  .invSlot img{max-width:88%;max-height:88%;image-rendering:auto;pointer-events:none;}
+  /* ---- hub / inventory / bank / shop (Canifis update) ----
+     Genuine client treatment: the inventory (interface 149) and the
+     worn-equipment screen (interface 387) draw items DIRECTLY on the
+     panel stone — no slot boxes anywhere. Inventory pitch is the
+     client's own 42 x 36; the doll below is interface 387's layout at
+     its own coordinates over the composed doll frame (gf-doll.png). */
+  #invGrid{display:grid;grid-template-columns:repeat(4,42px);grid-auto-rows:36px;gap:0;justify-content:center;margin-top:4px;}
+  .invSlot{position:relative;background:none;border:0;box-shadow:none;border-radius:0;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
+  .invSlot.empty{cursor:default;}
+  .invSlot img{max-width:32px;max-height:32px;image-rendering:auto;pointer-events:none;}
   .invSlot .invInit{font-weight:800;font-size:17px;pointer-events:none;}
   .invSlot .invPrice{position:absolute;left:2px;bottom:0;font-size:9.5px;color:#ffd75e;text-shadow:1px 1px 0 #000;pointer-events:none;}
-  .invSlot.rar5{border-color:#ffb52e;box-shadow:inset 1px 1px 0 #241c10,0 0 6px rgba(255,181,46,.55);}
+  .invSlot.rar5{box-shadow:0 0 7px rgba(255,181,46,.75);}
   .invModeRow{display:flex;gap:6px;margin-top:8px;}
   .invModeRow .sbtn{flex:1;margin:0;}
-  .invModeRow .sbtn.on{background:#6b5a2e;color:#ffe83d;border-color:#c79a3a;}
-  .doll{display:grid;grid-template-columns:repeat(3,52px);grid-template-areas:"cape head neck" "weapon body shield" ". legs ." "hands feet ring";gap:5px;justify-content:center;margin:8px auto 4px;}
-  .dslot{position:relative;width:52px;height:52px;background:#3e3529;border:2px solid #57492f;box-shadow:inset 1px 1px 0 #241c10,inset -1px -1px 0 #6b5a3e;border-radius:3px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
-  .dslot img{max-width:86%;max-height:86%;pointer-events:none;}
+  .invModeRow .sbtn.on{color:#ffe83d;filter:brightness(1.4);}
+  .doll{position:relative;width:100%;max-width:190px;aspect-ratio:190/205;margin:2px auto 0;background:url(assets/ui/gf-doll.png) left top/100% 100% no-repeat;}
+  .dslot{position:absolute;width:18.95%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;cursor:pointer;background:none;border:0;box-shadow:none;border-radius:0;padding:0;}
+  .dslot img{max-width:88%;max-height:88%;pointer-events:none;}
   .dslot .invInit{font-weight:800;font-size:16px;pointer-events:none;}
-  .dslot .dslotLab{position:absolute;left:0;right:0;bottom:-1px;font-size:8.5px;text-align:center;color:#b3a077;text-shadow:1px 1px 0 #000;pointer-events:none;letter-spacing:.4px;}
-  .dslot.noSlot{opacity:.38;cursor:default;}
-  .dslot.rar5{border-color:#ffb52e;box-shadow:inset 1px 1px 0 #241c10,0 0 6px rgba(255,181,46,.55);}
-  .dollExtra{display:flex;gap:5px;justify-content:center;margin-top:12px;}
-  .bankGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;max-height:216px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:2px;}
-  .shopGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}
+  .dslot .dslotLab{position:absolute;left:50%;transform:translateX(-50%);bottom:-8px;font-size:8px;text-align:center;color:#c9b586;text-shadow:1px 1px 0 #000;pointer-events:none;letter-spacing:.3px;white-space:nowrap;}
+  .dslot.noSlot{opacity:.45;cursor:default;}
+  .dslot.rar5{box-shadow:0 0 7px rgba(255,181,46,.75);}
+  .dollExtra{display:flex;gap:14px;justify-content:center;margin-top:16px;}
+  .dollExtra .dslot{position:relative;width:36px;height:36px;flex:none;}
+  .bankGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;max-height:216px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:2px;}
+  .bankGrid .invSlot,.shopGrid .invSlot{height:46px;}
+  .shopGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;}
   .hubCard{max-width:680px;width:94%;}
   .hubCols{display:grid;grid-template-columns:1fr 1fr;gap:14px;text-align:left;}
   @media (max-width:640px){ .hubCols{grid-template-columns:1fr;} }
@@ -450,6 +488,18 @@
   body.cssRotated .hsTitle{font-size:16px;margin-bottom:3px;}
   body.cssRotated #hsTable{font-size:11.5px;}
   body.cssRotated #hsTable th,body.cssRotated #hsTable td{padding:2px 4px;}
+  /* ---- genuine gameframe pass: scrollbars + stat cells ----
+     Scrollbars: the thumb wears the tab-stone sprite (1030) and the
+     end buttons the client's arrow sprites (1050 up / 1051 down) over
+     the dark track tone the panel stone uses. */
+  #tabBody::-webkit-scrollbar,.bankGrid::-webkit-scrollbar,.card::-webkit-scrollbar{width:14px;height:14px;}
+  #tabBody::-webkit-scrollbar-track,.bankGrid::-webkit-scrollbar-track,.card::-webkit-scrollbar-track{background:#241a0e;}
+  #tabBody::-webkit-scrollbar-thumb,.bankGrid::-webkit-scrollbar-thumb,.card::-webkit-scrollbar-thumb{background:url(assets/ui/gf-tab.png) center/cover no-repeat #5f3626;border:2px solid #100c07;}
+  #tabBody::-webkit-scrollbar-button:vertical:decrement,.bankGrid::-webkit-scrollbar-button:vertical:decrement,.card::-webkit-scrollbar-button:vertical:decrement{height:12px;background:#3a2c1c url(assets/ui/gf-scroll-up.png) center/7px 5px no-repeat;}
+  #tabBody::-webkit-scrollbar-button:vertical:increment,.bankGrid::-webkit-scrollbar-button:vertical:increment,.card::-webkit-scrollbar-button:vertical:increment{height:12px;background:#3a2c1c url(assets/ui/gf-scroll-down.png) center/7px 5px no-repeat;}
+  /* Run-stats lines sit in the genuine skills-cell frame (sprite 183,
+     the black cell with the tan border interface 320 draws stats on). */
+  #statsPage .statLine{border:6px solid transparent;border-image-source:url(assets/ui/gf-stat-cell.png);border-image-slice:8 fill;border-image-width:6px;border-image-repeat:stretch;padding:2px 7px;margin-bottom:5px;line-height:1.5;}
   @media (max-height:520px){
     #blessScreen .card{padding:10px 14px;}
     #blessScreen .card h2{font-size:20px;margin-bottom:0;}
@@ -506,10 +556,10 @@
 
  <div id="sidebar">
   <div id="tabs">
-    <button class="tab" data-tab="ctrl"><img src="assets/ui/world-map-icon.png" alt="">Menu</button>
-    <button class="tab" data-tab="inv"><img src="assets/items/looting-bag.png" alt="">Inv</button>
-    <button class="tab" data-tab="stats"><img src="assets/ui/skills-icon.png" alt="">Stats</button>
-    <button class="tab active" data-tab="equip"><img src="assets/ui/combat-icon.png" alt="">Equip</button>
+    <button class="tab" data-tab="ctrl" title="Menu" aria-label="Menu"><img src="assets/ui/gf-ico-menu.png" alt=""></button>
+    <button class="tab" data-tab="inv" title="Inventory" aria-label="Inventory"><img src="assets/ui/gf-ico-inv.png" alt=""></button>
+    <button class="tab" data-tab="stats" title="Stats" aria-label="Stats"><img src="assets/ui/gf-ico-stats.png" alt=""></button>
+    <button class="tab active" data-tab="equip" title="Equipment" aria-label="Equipment"><img src="assets/ui/gf-ico-equip.png" alt=""></button>
   </div>
   <div id="tabBody">
     <div id="equipPanel" class="panel hidden">
@@ -737,7 +787,7 @@
         <div class="orb"><div class="orbRing" id="dashRing"><img src="assets/ui/run-energy-orb.png" alt="Dash energy"></div><span id="orbDash">—</span></div>
       </div>
       <div id="blessIcons"></div>
-      <div id="mmBox"><canvas id="minimap" width="152" height="152"></canvas><img id="compass" src="assets/ui/compass.png" alt=""></div>
+      <div id="mmBox"><img id="mmBack" src="assets/ui/gf-mm-back.png" alt=""><canvas id="minimap" width="146" height="146"></canvas><img id="mmRing" src="assets/ui/gf-mm-ring.png" alt=""><img id="compass" src="assets/ui/compass.png" alt=""></div>
     </div>
     <div id="runLine"><span id="rlTime">0:00</span> | Kills <b id="rlKills">0</b><br><span id="rlNote">King Black Dragon at 7:00</span></div>
   </div>
@@ -1402,7 +1452,7 @@ function newGame(hero){
     if(!P.gear.weapon) P.gear.weapon=hero.start;
     P.coins=META.gold|0;
   }
-  G={P, enemies:[], gems:[], loots:[], projs:[], allies:[], splats:[], parts:[],
+  G={P, enemies:[], gems:[], loots:[], pickups:[], projs:[], allies:[], splats:[], parts:[],
      time:0, spawnT:0, eliteT:55, miniDone:false, bossSpawned:false, boss:null,
      state:'playing', over:false, victory:false, shake:0, slowmo:0};
   P.hp=1; recalc(); P.hp=P.stats.maxHp;
@@ -1704,7 +1754,7 @@ function playerAttack(dt){
   let best=null,bd=1e18; const range=st==='m'?78:330;
   for(const e of G.enemies){ const d=dist2(P,e); if(d<bd){bd=d;best=e;} }
   if(!best||bd>range*range) return;
-  P.atkT=rate; P.swingT=0.14; P.face=best.x>=P.x?1:-1; P.atkPulse=G.time;
+  P.atkT=rate; P.swingT=0.14; P.atkMoveT=0.3; P.face=best.x>=P.x?1:-1; P.atkPulse=G.time;
   const base=(w?w.dmg:P.baseDmg);
   let dmg=base*playerDamageMul()*rand(.9,1.12);
   const kbMul=1+Bmult('rampage')*0.35;
@@ -1764,12 +1814,15 @@ function updateAllies(dt){
       if(d>best.r+a.r+2){ a.x+=dx*a.spd*dt; a.y+=dy*a.spd*dt; }
       else if(a.atkT<=0){ a.atkT=0.7;
         const mul=1+P.stats.summon/100;
-        damageEnemy(best, a.dmg*mul*rand(.9,1.1), {col:'#bfe3ff'}); }
+        damageEnemy(best, a.dmg*mul*rand(.9,1.1), {col:'#bfe3ff'});
+        if(best.dead&&a.kind==='terracotta') magnetizeRoll(a.x,a.y); /* Magnetize infusion: a Terracotta kill can leave a Magnet */
+        if(best.dead&&a.kind==='lynx'&&s4Inf('energy')>0){ const rec=P.bless?P.bless['lightninglynx']:null, rar=rec?(rec.rar||0):0, ch=LYNX_WING_CH[Math.min(5,s4Inf('energy'))-1][rar]; if(Math.random()*100<ch) spawnPickup('wing',best.x,best.y); } /* It's All Energy: the lynx drops Wings at the published chances */ }
     } else { // drift back to player
       const d=Math.hypot(P.x-a.x,P.y-a.y);
       if(d>44){ a.x+=(P.x-a.x)/d*a.spd*dt; a.y+=(P.y-a.y)/d*a.spd*dt; }
     }
   }
+  for(const a of G.allies) if(a.life<=0&&a.kind==='terracotta') magnetizeRoll(a.x,a.y); /* Magnetize: a fallen Terracotta Soldier can leave a Magnet */
   G.allies=G.allies.filter(a=>a.life>0);
 }
 
@@ -1821,7 +1874,7 @@ function update(dt){
   const mm=Math.hypot(mx,my); if(mm>1){mx/=mm;my/=mm;}
   if(mx) P.face=mx>0?1:-1;
   const gemMul=P.gemStacks>0?1+0.005*Bmult('gemhigh')*P.gemStacks:1;
-  const spd=(G.mode==='3d'?OSRS_WALK_SIM:P.baseSpd)*(1+P.stats.ms/100)*gemMul;
+  const spd=(G.mode==='3d'?OSRS_WALK_SIM:P.baseSpd)*(1+P.stats.ms/100)*gemMul*(P.atkMoveT>0&&pickBuffN('stamina')===0?0.8:1); /* attacking movement penalty 20% — Stone of Stamina sets it to 0% */
   if(P.dashT>0){ P.dashT-=dt; P.x+=P.dashDx*880*dt; P.y+=P.dashDy*880*dt;
     if(Bmult('charge')){ for(const e of G.enemies) if(Math.hypot(e.x-P.x,e.y-P.y)<e.r+18&&!e.dashHit){ e.dashHit=true; damageEnemy(e,P.gear.weapon.dmg*0.6*Bmult('charge'),{}); } }
   } else { P.x+=mx*spd*dt; P.y+=my*spd*dt; }
@@ -1831,9 +1884,10 @@ function update(dt){
   if(P.dashCd>0) P.dashCd-=dt;
   if(P.invuln>0) P.invuln-=dt;
   if(P.swingT>0) P.swingT-=dt;
+  if(P.atkMoveT>0) P.atkMoveT-=dt;
   if(P.gemT>0){ P.gemT-=dt; if(P.gemT<=0) P.gemStacks=0; }
   // regen & shield
-  P.hp=Math.min(P.stats.maxHp, P.hp + P.stats.regen*dt);
+  P.hp=Math.min(P.stats.maxHp, P.hp + (P.stats.regen + 0.8*pickBuffN('spring'))*dt); /* Mineral Spring: +0.8 life regen per stack */
   if(Bmult('shield')&&!P.shieldUp){ P.shieldT-=dt; if(P.shieldT<=0){ P.shieldUp=true; toast('Divine Shield restored','#6fc2ff'); } }
   });
   // regen life from vampirism is on-kill (in kill hook below via flag)
@@ -1905,12 +1959,15 @@ function update(dt){
   }
   G.projs=G.projs.filter(p=>p.life>0);
   });
+  // bonus-drop pickups (walk-over collect)
+  sysGuard('pickups', ()=>pickupTick(dt));
   // gems
   sysGuard('gems', ()=>{
+  const pullR=pickBuffN('collecting')>0?1e9:(pickBuffN('magnet')>0?P.stats.pickupR*6:P.stats.pickupR); /* Stone of Collecting: unlimited pull; Magnet: x6. The Red Gem is not a gem — pull never touches it */
   for(const gm of G.gems){
     gm.t+=dt*4;
     const d=Math.hypot(P.x-gm.x,P.y-gm.y);
-    if(d<P.stats.pickupR) gm.fly=true;
+    if(d<pullR) gm.fly=true;
     if(gm.fly){
       const a=Math.atan2(P.y-gm.y,P.x-gm.x), fsp=520;
       // Zaros: Force — gems damage enemies they pass
@@ -1946,7 +2003,7 @@ function update(dt){
 }
 function gainXp(v){
   const P=G.P;
-  const real=v*(1+P.stats.xp/100);
+  const real=v*(1+P.stats.xp/100)*(1+0.6*pickBuffN('experience')); /* Stone of Experience pickup: +60% XP per stack */
   P.xp+=real; P.totalXp+=real;
   while(P.xp>=P.xpNext){ P.xp-=P.xpNext; P.lvl++; P.xpNext=Math.round(8+P.lvl*5.2*Math.pow(1.13,P.lvl)); levelUp(); if(!G||G.state!=='playing') break; }
 }
@@ -2089,6 +2146,13 @@ function draw(){
     ctx.fillStyle='#2277cc'; ctx.fillRect(-4.5,-4.5,9,9);
     ctx.fillStyle='#7fd0ff'; ctx.fillRect(-2.5,-2.5,4,4); ctx.restore();
   }
+  // bonus-drop pickups
+  if(G.pickups) for(const pk of G.pickups){ const pdef=PICKUP_DEFS[pk.id]; if(!pdef) continue;
+    const pbob=Math.sin(pk.t*3+pk.bob)*2;
+    ctx.save(); ctx.translate(pk.x,pk.y+pbob);
+    ctx.globalAlpha=0.4; ctx.fillStyle=pdef.col; ctx.beginPath(); ctx.ellipse(0,6,13,5,0,0,7); ctx.fill(); ctx.globalAlpha=1;
+    ctx.fillStyle=pdef.col; ctx.beginPath(); ctx.arc(0,0,pk.id==='redgem'?10:8,0,7); ctx.fill();
+    ctx.fillStyle='#0c0a08'; ctx.font='800 10px "RogueScape UF",Arial,sans-serif'; ctx.textAlign='center'; ctx.fillText(pdef.name[0],0,3.5); ctx.restore(); }
   // coins sparkle
   // entities sorted by y
   const ents=[];
@@ -2203,7 +2267,7 @@ const mmc=document.getElementById('minimap'), mmx=mmc?mmc.getContext('2d'):null;
 let MAPCITY_IMG=null; // genuine top-down Varrock (MapImageDumper, same cache build), loaded with the other assets
 function drawMinimap(){
   if(!mmx) return;
-  const S=152, C=S/2, sc=S/640; // ~320 world units visible in each direction
+  const S=146, C=S/2, sc=S/640; // ~320 world units visible in each direction
   mmx.save();
   mmx.beginPath(); mmx.arc(C,C,C-1,0,7); mmx.clip();
   if(!G){ /* no run yet: plain black disc — no placeholder map, no label */
@@ -2806,11 +2870,10 @@ const WORLD_DEFS={
 const WD={ varrock:{col:null,hgt:null,roof:null,loaded:false,loading:null}, canifis:{col:null,hgt:null,roof:null,loaded:false,loading:null} };
 function setActiveWorld(name){
   const def=WORLD_DEFS[name]; if(!def) return;
-  try{ g3dRoofSet(-1); }catch(e){} // restore the outgoing world's hidden roofs
   ACTIVE_NAME=name; ABX=def.bx; ABY=def.by;
   MAP3D.ox=def.ox; MAP3D.oz=def.oz; MAP3D.s=def.s; MAP3D.groundY=def.groundY;
   const W=WD[name];
-  COL=W.col; HGT=W.hgt; ROOF=W.roof;
+  COL=W.col; HGT=W.hgt; ROOF=W.roof; TROOF=W.troofs;
   window.__colReady=!!W.col;
   if(V3D.regions){ for(const rid in V3D.regions) V3D.regions[rid].visible = def.ids.indexOf(rid)>=0; }
   if(V3D.scene){ const hub=name==='canifis';
@@ -3002,6 +3065,71 @@ function g3dClaimLoot(l){
   rec.tex.needsUpdate=true;
   return rec;
 }
+/* ---- bonus-drop pickup rendering ----
+   A coloured ground disc with the pickup's icon floating above it.
+   Icons come from the game files where OSRS has one (Heart = the
+   hitpoints icon, Wing = the feather, Shield = the granite shield,
+   Orb of Power = the strength icon, Stone of Experience = the skills
+   icon, Totem of the Hare = the agility icon). Four concepts have no
+   OSRS icon — Magnet, Mineral Spring, Obelisk of Sanctuary, Stone of
+   Collecting — so those four are simple canvas glyphs drawn once here
+   (named exceptions; nothing else in the interface is hand-drawn).
+   The Red Gem reuses the XP-gem mesh in red, grown large. */
+const PICKUP_ICON_SRC={heart:'assets/ui/hitpoints-icon.png',wing:'assets/items/feather.png',shield:'assets/items/granite-shield.png',orbpower:'assets/ui/strength-icon.png',experience:'assets/ui/skills-icon.png',hare:'assets/ui/agility-icon.png'};
+const PICKUP_IMGS={};
+for(const pkK in PICKUP_ICON_SRC){ const pkIm=new Image(); pkIm.src=PICKUP_ICON_SRC[pkK]; PICKUP_IMGS[pkK]=pkIm; }
+const PICKUP_GLYPH={};
+function pickupGlyphTex(id){
+  if(PICKUP_GLYPH[id]) return PICKUP_GLYPH[id];
+  const cnv=document.createElement('canvas'); cnv.width=cnv.height=128; const g=cnv.getContext('2d');
+  g.lineCap='round'; g.lineJoin='round';
+  if(id==='magnet'){ /* horseshoe magnet: red U, pale tips */
+    g.strokeStyle='#d8262c'; g.lineWidth=24;
+    g.beginPath(); g.moveTo(38,24); g.lineTo(38,64); g.arc(64,64,26,Math.PI,0,true); g.lineTo(90,24); g.stroke();
+    g.strokeStyle='#e8e4d8'; g.beginPath(); g.moveTo(38,24); g.lineTo(38,44); g.moveTo(90,24); g.lineTo(90,44); g.stroke();
+  } else if(id==='spring'){ /* lotus over water */
+    g.fillStyle='#37e0b0'; g.beginPath(); g.ellipse(64,58,15,24,0,0,7); g.fill();
+    g.beginPath(); g.ellipse(38,66,11,17,-0.7,0,7); g.fill(); g.beginPath(); g.ellipse(90,66,11,17,0.7,0,7); g.fill();
+    g.strokeStyle='#37b6e0'; g.lineWidth=7;
+    g.beginPath(); g.arc(44,98,14,Math.PI*1.15,Math.PI*1.85); g.stroke(); g.beginPath(); g.arc(84,98,14,Math.PI*1.15,Math.PI*1.85); g.stroke();
+  } else if(id==='obelisk'){ /* stone pillar, gold cap */
+    g.fillStyle='#cfc9bb'; g.fillRect(52,32,24,62);
+    g.fillStyle='#8f897c'; g.fillRect(44,94,40,10); g.fillRect(46,24,36,8);
+    g.fillStyle='#ffd75e'; g.beginPath(); g.moveTo(64,8); g.lineTo(78,26); g.lineTo(50,26); g.closePath(); g.fill();
+  } else if(id==='collecting'){ /* violet stone, white spiral */
+    g.fillStyle='#8a6fd6'; g.beginPath(); g.arc(64,64,38,0,7); g.fill();
+    g.strokeStyle='#ffffff'; g.lineWidth=7; g.beginPath();
+    for(let a=0;a<Math.PI*4.4;a+=0.25){ const r=3+a*2.1, x=64+Math.cos(a)*r, y=64+Math.sin(a)*r; if(a===0) g.moveTo(x,y); else g.lineTo(x,y); }
+    g.stroke();
+  }
+  const tex=new THREE.CanvasTexture(cnv); PICKUP_GLYPH[id]=tex; return tex;
+}
+function g3dMakePickup(){
+  const grp=new THREE.Group();
+  const disc=new THREE.Mesh(new THREE.CircleGeometry(0.37,24), new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.35,depthWrite:false}));
+  disc.rotation.x=-Math.PI/2; disc.position.y=0.03; grp.add(disc);
+  const icon=new THREE.Mesh(new THREE.PlaneGeometry(0.68,0.68), new THREE.MeshBasicMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide}));
+  icon.position.y=0.62; grp.add(icon);
+  const gem=new THREE.Mesh(G3D.geoGem,new THREE.MeshBasicMaterial({color:0xff2a3c}));
+  gem.scale.set(2.2,2.2,2.2); gem.position.y=0.5; gem.visible=false; grp.add(gem);
+  grp.visible=false; G3D.group.add(grp);
+  return {grp:grp,disc:disc,icon:icon,gem:gem};
+}
+function g3dClaimPickup(pk){
+  G3D.pickRecs=G3D.pickRecs||new Map();
+  let rec=G3D.pickRecs.get(pk); if(rec) return rec;
+  rec=(G3D.freePicks&&G3D.freePicks.pop())||g3dMakePickup(); G3D.pickRecs.set(pk,rec);
+  const def=PICKUP_DEFS[pk.id];
+  rec.disc.material.color.set(def?def.col:'#ffffff');
+  if(pk.id==='redgem'){ rec.gem.visible=true; rec.icon.visible=false; }
+  else { rec.gem.visible=false; rec.icon.visible=true;
+    const img=PICKUP_IMGS[pk.id];
+    if(img&&img.complete&&img.naturalWidth){ rec.icon.material.map=g3dTex(img); rec.icon.material.color.set(0xffffff); }
+    else if(pk.id==='magnet'||pk.id==='spring'||pk.id==='obelisk'||pk.id==='collecting'){ rec.icon.material.map=pickupGlyphTex(pk.id); rec.icon.material.color.set(0xffffff); }
+    else { rec.icon.material.map=null; rec.icon.material.color.set(def?def.col:'#ffffff'); }
+    rec.icon.material.needsUpdate=true; }
+  return rec;
+}
 /* ---- splat (hitsplat) sprites ---- */
 function g3dMakeSplat(){
   const cnv=document.createElement('canvas'); cnv.width=128; cnv.height=64;
@@ -3121,6 +3249,18 @@ function g3dSyncAll(cam){
     rec.icon.rotation.y=Math.atan2(cam.position.x-w2sx(l.x),cam.position.z-w2sz(l.y));
   }
   for(const entry of Array.from(G3D.lootRecs)){ if(!seenLoot.has(entry[0])){ entry[1].grp.visible=false; G3D.lootRecs.delete(entry[0]); (G3D.freeLoots=G3D.freeLoots||[]).push(entry[1]); } }
+  // bonus-drop pickups
+  if(G.pickups&&G.pickups.length){
+    const seenPk=new Set();
+    for(const pk of G.pickups){ seenPk.add(pk); const rec=g3dClaimPickup(pk);
+      rec.grp.visible=true;
+      rec.grp.position.set(w2sx(pk.x),groundH(w2sx(pk.x),w2sz(pk.y)),w2sz(pk.y));
+      rec.disc.material.opacity=0.3+0.13*Math.sin(pk.t*4+pk.bob);
+      if(pk.id==='redgem'){ rec.gem.position.y=0.5+Math.sin(pk.t*3+pk.bob)*0.06; rec.gem.rotation.y=pk.t*1.6; }
+      else { rec.icon.position.y=0.62+Math.sin(pk.t*3+pk.bob)*0.07; rec.icon.rotation.y=Math.atan2(cam.position.x-w2sx(pk.x),cam.position.z-w2sz(pk.y)); }
+    }
+    if(G3D.pickRecs) for(const entry of Array.from(G3D.pickRecs)){ if(!seenPk.has(entry[0])){ entry[1].grp.visible=false; G3D.pickRecs.delete(entry[0]); (G3D.freePicks=G3D.freePicks||[]).push(entry[1]); } }
+  } else if(G3D.pickRecs&&G3D.pickRecs.size){ for(const entry of Array.from(G3D.pickRecs)){ entry[1].grp.visible=false; (G3D.freePicks=G3D.freePicks||[]).push(entry[1]); } G3D.pickRecs.clear(); }
   // projectiles
   for(let i=0;i<G.projs.length;i++){
     let m=G3D.projPool[i];
@@ -3296,7 +3436,6 @@ async function startRun3D(hero){
 }
 function exit3DRun(){
   loadScreenShow(false);
-  try{ g3dRoofSet(-1); }catch(e){} // restore any hidden roof on the way out
   G3D.active=false;
   window.__g3dBigWorld=false; WORLD.w=2600; WORLD.h=2600;
   document.body.classList.remove('g3d');
@@ -3838,7 +3977,7 @@ let COL=null;
    interior tile now stands at 1.88–2.31 (ground/deck), none at roof
    height. ---- */
 let HGT=null;
-function makeRoofState(){ return {tile:new Map(),data:null,regions:{},bound:false,regionBound:{},hiddenCid:-1,saved:new Map(),zero:null}; }
+function makeRoofState(){ return {tile:new Map(),data:null,regions:{},bound:false,regionBound:{},allHidden:false,hiddenCount:0,zero:null}; }
 function b64Bytes(b64){ const bin=atob(b64); const bytes=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i); return bytes; }
 /* Load one world's sidecars (collision / heights / roofs) from its own
    exported files; when it is the active world, swap them in live. */
@@ -3862,9 +4001,12 @@ function worldLoad(name){
       for(const c of jr.clusters) for(const t of c.tiles) st.tile.set(t[0]+','+t[1],c.id);
       st.data=jr.regions;
       W.roof=st;
-    }catch(e){ if(window.console) console.warn(name+' roofs load failed; roofs stay on:',e); }
+    }catch(e){ if(window.console) console.warn(name+' roofs load failed; roof pieces cannot be identified and will render:',e); }
+    try{
+      const rt=await fetch(dir+'terrain-roofs.json'); W.troofs=await rt.json();
+    }catch(e){ if(window.console) console.warn(name+' terrain-roofs load failed; flat tile roofs will render:',e); }
     W.loaded=true;
-    if(ACTIVE_NAME===name){ COL=W.col; HGT=W.hgt; ROOF=W.roof; window.__colReady=!!W.col; window.__hgtReady=!!W.hgt; window.__roofReady=!!W.roof; }
+    if(ACTIVE_NAME===name){ COL=W.col; HGT=W.hgt; ROOF=W.roof; TROOF=W.troofs; window.__colReady=!!W.col; window.__hgtReady=!!W.hgt; window.__roofReady=!!W.roof; }
   })();
   return W.loading;
 }
@@ -3879,47 +4021,90 @@ function groundH(sx,sz){
   return (a*(1-tx)+b*tx)*(1-tz)+(c*(1-tx)+e*tx)*tz;
 }
 
-/* ---- remove-roofs (stage 5, OSRS semantics) ----
-   In the cache map data, a plane-0 tile with tileSetting bit 4 is an
-   interior tile — it has a roof over it. The exporter grouped those
-   tiles into buildings (49 clusters city-wide) and mapped every
-   upper-plane location piece over each building's footprint back to
-   (region, instanced variant, instance) in assets/varrock/roofs.json.
-   While the player's tile is inside a building, exactly that building's
-   roof pieces are hidden (their instance matrices are zero-scaled);
-   every other roof stays on, and the hidden set is restored on exit —
-   the way the real game does it. If the sidecar ever fails to load or
-   validate against the loaded GLBs, roofs simply stay on. */
+/* ---- roofs: REMOVED BY DEFAULT (user's decision, superseding the
+   OSRS-style auto-remove) ----
+   The auto-remove system (hide the roof over the player's building,
+   restore it on exit) never engaged reliably on the user's phone, and
+   his call is final: no roof geometry renders at all, in either world.
+   roofs.json still identifies WHICH instanced pieces are roofs (the
+   exporter grouped every roof piece of every building, per region and
+   variant); the moment a world's roof index has bound to its loaded
+   GLBs, every one of those instances is zero-scaled — permanently.
+   Walls, interiors and everything else are untouched: only instances
+   listed in the roof clusters are hidden. Flat roofs made of map
+   tiles rather than placed pieces live inside the merged terrain
+   geometry; terrain-roofs.json lists those triangles (planes >= 2)
+   and they are collapsed at load by g3dTerrainRoofTick below.
+   Collision/heights were already ground-floor, so nothing else
+   changes. If a sidecar ever fails to load, the roofs it identifies
+   cannot be found and stay rendered. */
 let ROOF=null;
+let TROOF=null;
 async function g3dLoadRoofs(){ return worldLoad(ACTIVE_NAME); }
-/* Roof binding, made fault-tolerant (the in-practice failure behind
-   "roofs are not being auto removed"): the old bind demanded that
-   EVERY variant in EVERY region match its recorded instance count in
-   strict emission order, and one mismatch — a variant the loader split
-   or merged differently on a given device — failed the whole city
-   silently, so no roof ever hid anywhere. Now each variant binds
-   independently: strict ordinal first, then any unused unit with the
-   recorded instance count; a variant that cannot be matched is skipped
-   (its roof stays on) without taking the rest of the city down with
-   it. Per-region results are kept so the tick can report them. */
+/* Roof binding, made fault-tolerant: each variant binds independently
+   (strict ordinal first, then any unused unit with the recorded
+   instance count); a variant that cannot be matched is skipped (its
+   roof pieces cannot be identified and stay rendered) without taking
+   the rest of the city down with it. Per-region results are kept so
+   the bind can report them. */
+/* Content fingerprint of one loaded variant unit, computed exactly
+   as the sidecar generator computed it from the cache: hash every
+   vertex position, color and UV float (millimetre-quantized) of
+   every primitive in order, then every instance translation of the
+   unit's first mesh; returns "hash:vertexCount". */
+function g3dUnitFingerprint(unit){
+  let h=0, vc=0;
+  const fold=a=>{ if(!a) return; const arr=a.array; for(let i=0;i<arr.length;i++){ const q=Math.round(arr[i]*1000); h=(Math.imul(h,31)+q)|0; } };
+  for(const mesh of unit){
+    const at=mesh.geometry?mesh.geometry.attributes:null; if(!at||!at.position) continue;
+    vc+=at.position.count;
+    fold(at.position); fold(at.color); fold(at.uv);
+  }
+  const m0=unit[0];
+  if(m0&&m0.instanceMatrix){
+    const a=m0.instanceMatrix.array;
+    for(let i=0;i<m0.count;i++){ const o=i*16;
+      for(const e of [a[o+12],a[o+13],a[o+14]]){ const q=Math.round(e*1000); h=(Math.imul(h,31)+q)|0; } }
+  }
+  return h+':'+vc;
+}
 function g3dRoofBind(){
   if(!ROOF||!ROOF.data||!V3D.regions) return;
   let anyBound=false;
   for(const rid in ROOF.data){
     if(ROOF.regionBound[rid]) continue;
     const grp=V3D.regions[rid]; if(!grp) continue;
+    /* One unit per exported variant. The loaded scene wraps the
+       region in a single root node whose children are the merged
+       terrain mesh (not instanced - skipped) followed by one node
+       per variant: an InstancedMesh, or a Group of InstancedMeshes
+       when the variant's model has several primitives. Two loader
+       traps killed earlier binds: the root wrapper node is a plain
+       Object3D, not a Group (an isGroup test never unwrapped, so no
+       unit was ever found); and the scene graph does NOT preserve
+       GLB child order (measured live: unit counts at a position do
+       not match the GLB order), so matching entries to units by
+       ordinal silently hid the WRONG variants' instances while the
+       real roofs rendered. Matching is therefore by CONTENT: each
+       roofs.json entry carries a fingerprint (hash of the variant's
+       vertex positions, colors, UVs and its instance translations,
+       plus vertex count) generated from the same cache data; a unit
+       binds only when fingerprint AND instance count both match -
+       unique per variant in every region (verified at generation). */
+    let kids=grp.children||[];
+    if(kids.length===1&&!kids[0].isInstancedMesh&&(kids[0].children||[]).length) kids=kids[0].children||[];
     const units=[];
-    for(const ch of grp.children){
+    for(const ch of kids){
       if(ch.isInstancedMesh) units.push([ch]);
-      else if(ch.isGroup){ const ms=[]; ch.traverse(m=>{ if(m.isInstancedMesh) ms.push(m); }); if(ms.length) units.push(ms); }
+      else if(ch.children&&ch.children.length){ const ms=[]; ch.traverse(m=>{ if(m.isInstancedMesh) ms.push(m); }); if(ms.length) units.push(ms); }
     }
+    const byKey=new Map();
+    for(const u of units){ const k=g3dUnitFingerprint(u)+'@'+u[0].count; if(!byKey.has(k)) byKey.set(k,u); }
     const used=new Set(), list=[]; let okCount=0;
     for(const e of ROOF.data[rid]){
-      let unit=null;
-      const cand=units[e.v];
-      if(cand&&cand.length&&!used.has(cand)&&cand[0].count===e.n) unit=cand;
-      if(!unit){ for(const u of units){ if(u.length&&!used.has(u)&&u[0].count===e.n){ unit=u; break; } } }
-      if(!unit) continue;
+      if(!e.g) continue;
+      const unit=byKey.get(e.g+'@'+e.n);
+      if(!unit||used.has(unit)) continue;
       used.add(unit); okCount++;
       list.push({meshes:unit,roof:e.roof});
     }
@@ -3929,34 +4114,81 @@ function g3dRoofBind(){
   window.__roofBound=ROOF.bound;
   window.__roofRegions=Object.assign({},ROOF.regionBound);
 }
-function g3dRoofSet(cid){
-  if(!ROOF||!ROOF.bound) return;
-  if(ROOF.hiddenCid===cid) return;
-  for(const entry of ROOF.saved){ entry[0].instanceMatrix.array.set(entry[1]); entry[0].instanceMatrix.needsUpdate=true; }
-  ROOF.saved.clear();
-  ROOF.hiddenCid=cid;
-  if(cid<0) return;
+/* Hide EVERY roof instance in the bound set, permanently: the union
+   of all clusters' instance lists, per variant unit. Instances of a
+   shared variant that no cluster claims are not roofs and stay. */
+function g3dRoofHideAll(){
+  if(!ROOF||!ROOF.bound||ROOF.allHidden) return;
   if(!ROOF.zero) ROOF.zero=new THREE.Matrix4().makeScale(0,0,0);
+  let n=0;
   for(const rid in ROOF.regions){
     for(const ent of ROOF.regions[rid]){
-      const idxs=ent.roof[cid]; if(!idxs) continue;
+      const idxs=new Set();
+      for(const cid in ent.roof) for(const ix of ent.roof[cid]) idxs.add(ix);
+      if(!idxs.size) continue;
       for(const mesh of ent.meshes){
-        if(!ROOF.saved.has(mesh)) ROOF.saved.set(mesh, mesh.instanceMatrix.array.slice());
         for(const ix of idxs) mesh.setMatrixAt(ix,ROOF.zero);
         mesh.instanceMatrix.needsUpdate=true;
       }
+      n+=idxs.size;
     }
   }
+  ROOF.allHidden=true; ROOF.hiddenCount=n;
 }
 function g3dRoofTick(){
-  if(!ROOF||!ROOF.data) return;
-  if(!ROOF.bound) g3dRoofBind();
-  if(!ROOF.bound||!G||!G.P) return;
-  const t=simToTile(G.P.x,G.P.y);
-  const cid=ROOF.tile.get(t.tx+','+t.ty);
-  g3dRoofSet(cid===undefined?-1:cid);
+  if(ROOF&&ROOF.data&&!ROOF.allHidden){
+    if(!ROOF.bound) g3dRoofBind();
+    if(ROOF.bound) g3dRoofHideAll();
+  }
+  g3dTerrainRoofTick();
 }
-window.__roofs={cid:()=>ROOF?ROOF.hiddenCid:-2,bound:()=>!!(ROOF&&ROOF.bound),tiles:()=>ROOF?ROOF.tile.size:0,hidden:()=>ROOF?ROOF.saved.size:0};
+/* Flat TILE roofs: the exporters bake all four map planes into one
+   merged terrain primitive per region, so a building whose roof is
+   made of map tiles (rather than placed pieces) has its roof inside
+   the terrain geometry itself — the big flat slabs over Canifis and
+   the flat roofs across Varrock. terrain-roofs.json (generated from
+   the cache by replicating the exporter's exact triangle emission
+   order, validated triangle-for-triangle against all ten shipped
+   GLBs) lists the terrain triangle ranges belonging to planes >= 2.
+   Those triangles are collapsed to zero area once, permanently, when
+   the region is loaded. Planes 0-1 — ground, floors, the GE deck,
+   bank floorboards, ceilings — are never listed and never touched. */
+function g3dTerrainRoofCut(mesh,ranges){
+  const geo=mesh.geometry; if(!geo||!ranges||!ranges.length) return;
+  const idx=geo.index, pos=geo.attributes?geo.attributes.position:null;
+  if(idx){
+    const arr=idx.array;
+    for(const r of ranges){
+      const s=r[0]*3, end=s+r[1]*3;
+      for(let i=s;i<end;i+=3){ arr[i+1]=arr[i]; arr[i+2]=arr[i]; }
+    }
+    idx.needsUpdate=true;
+  }else if(pos){
+    for(const r of ranges){
+      const s=r[0]*3, end=s+r[1]*3;
+      for(let v=s;v<end;v+=3){
+        const x=pos.getX(v), y=pos.getY(v), z=pos.getZ(v);
+        pos.setXYZ(v+1,x,y,z); pos.setXYZ(v+2,x,y,z);
+      }
+    }
+    pos.needsUpdate=true;
+  }
+}
+function g3dTerrainRoofTick(){
+  if(!TROOF||!V3D.regions) return;
+  for(const rid in TROOF){
+    if(!TROOF[rid]||!TROOF[rid].length) continue;
+    const grp=V3D.regions[rid]; if(!grp||grp.userData.troofCut) continue;
+    let kids=grp.children||[];
+    if(kids.length===1&&!kids[0].isInstancedMesh&&(kids[0].children||[]).length) kids=kids[0].children||[];
+    let terr=null;
+    for(const ch of kids){ if(ch.isMesh&&!ch.isInstancedMesh){ terr=ch; break; } }
+    if(!terr) continue;
+    g3dTerrainRoofCut(terr,TROOF[rid]);
+    grp.userData.troofCut=true;
+  }
+}
+window.__roofs={bound:()=>!!(ROOF&&ROOF.bound),allHidden:()=>!!(ROOF&&ROOF.allHidden),tiles:()=>ROOF?ROOF.tile.size:0,hidden:()=>ROOF?ROOF.hiddenCount:0,tcut:()=>{let n=0; if(typeof V3D!=='undefined'&&V3D.regions) for(const rid in V3D.regions) if(V3D.regions[rid].userData.troofCut) n++; return n;}};
 async function g3dLoadCollision(){ return worldLoad(ACTIVE_NAME); }
 function colFlag(wx,wy){
   if(!COL) return 1;
@@ -5004,7 +5236,7 @@ const S4_FX_TXT={hitStun:'Attack hits can Stun',hitFear:'Attack hits can apply F
  msToAtk:'Attack Damage draws on your Movement Speed',armorToLife:'Armor bonuses convert to Life',regenToDmg:'Regeneration converts to Damage — but you cannot heal',
  packBoots:'Movement Speed draws on Summon speed',loreDmg:'Damage grows with every Unique you have claimed',heroDmg:'Pure Damage — at the cost of every other blessing type',
  godOfWarLite:'Deal +25% damage — and take +25% damage',strikeAgain:'Strikes have a chance to trigger again',allGods:'Favored by all gods: better blessing offers of every tier',
- hitHealPickup:'Being hit can drop healing',notInForm:'While not in a druid form: its bonuses stand (this game\u2019s heroes hold no forms)',skeletonXp:'Skeletons can drop extra XP shards',
+ hitHealPickup:'Being hit can drop a Heart pickup',notInForm:'While not in a druid form: its bonuses stand (this game\u2019s heroes hold no forms)',skeletonXp:'Skeletons can drop extra XP shards',
  bearForm:'While in Bear form: its bonuses stand (this game\u2019s heroes hold no forms)',maxBlessUp:'Max-level blessings deal +50% more',evadeShift:'Evading can trade Armor for Evasion',
  noWeaponAtk:'Attack Damage while no weapon is equipped (your hands are never empty here)',
  noHeal:'You cannot restore life',noXp:'You cannot gain experience',noSummonSlots:'No Summon slots — the lone wolf needs none',noOtherSlots:'Only Dash blessings may be offered',
@@ -5059,6 +5291,7 @@ function recalc(){
   s.msTotal=s.ms + s.msf*0.45;
   s.regenEff=s.regen*(1+((s.heals||0)+(s.regenPct||0))/100);
   s.pickupR=clamp(70*(1+(s.pickup + s.pull*0.12)/100),70,560);
+  s.pickupDropsTotal=(s.pickupDrops||0)+(s.luck||0); /* Pick Up Drops stat: Luck feeds it 1:1 */
   s.dashCdMax=Math.max(0.6, 2.4/(1+(s.dashRch||0)/100));
   s.dashCharges=1+Math.floor(s.dashChg||0);
   s.spell=s.dmg+s.cast;
@@ -5199,6 +5432,7 @@ function damageEnemy(e,amount,opts){
   opts=opts||{}; if(!e||e.hp<=0||e.dead) return;
   s4Enemy(e); const P=G.P, s=P.stats, S=s4P();
   let mul=1;
+  if(opts.type==='power'){ const opn=pickBuffN('orbpower'); if(opn) mul*=1+opn; } /* Orb of Power pickup: +100% Power per stack */
   if(e.st.mark>0) mul*=1.3;
   if(e.hp>=e.maxHp) mul*=1+(s.dmgUndmg||0)/100;
   if(e.boss) mul*=1+(s.dmgBoss||0)/100; else if(e.elite) mul*=1+(s.dmgElite||0)/100;
@@ -5315,7 +5549,7 @@ function playerAttack(dt){
   const range=A.proj?340:60+(w.warea||100)*0.3;
   let best=null,bd=1e18; for(const e of G.enemies){ const d=dist2(P,e); if(d<bd){bd=d;best=e;} }
   if(!best||bd>range*range) return;
-  P.atkT=rate; P.swingT=0.14; P.face=best.x>=P.x?1:-1; P.atkPulse=G.time;
+  P.atkT=rate; P.swingT=0.14; P.atkMoveT=0.3; P.face=best.x>=P.x?1:-1; P.atkPulse=G.time;
   const dmgBase=w.dmg*playerDamageMul()*rand(.9,1.12);
   const kbMul=1+(s.kb||0)/100;
   if(A.proj){
@@ -5337,6 +5571,7 @@ function playerAttack(dt){
 function hurtPlayer(amount,srcx,srcy){
   const P=G.P; if(P.invuln>0||P.dashT>0||!G||G.state!=='playing') return;
   const s=P.stats, S=s4P();
+  if(pickBuffN('shield')>0||pickBuffN('obelisk')>0){ splat(P.x,P.y,'Blocked','#6fc2ff',12); return; } /* Shield pickup / Obelisk of Sanctuary: immune to damage */
   let src=null,bd=1e12; if(srcx!==undefined) for(const e of G.enemies){ const d=(e.x-srcx)*(e.x-srcx)+(e.y-srcy)*(e.y-srcy); if(d<bd){bd=d;src=e;} }
   if(Math.random()*100<Math.min(60,(s.evasion||0)*0.25+(S.evadePowT>0?15:0))){ splat(P.x,P.y,'Dodged','#6fc2ff',12); P.invuln=0.35;
     if(s4HasFx('evadeBuff')){ S.evadePowT=3; } if(s4HasFx('evadeShift')&&Math.random()<0.4){ S.misE=(S.misE||0)+2; S.misA=(S.misA||0)+1; } return; }
@@ -5351,7 +5586,7 @@ function hurtPlayer(amount,srcx,srcy){
   splat(P.x,P.y,Math.round(dmg),'#ff5147',14); SFX.hurt();
   if(srcx!==undefined){ const a=Math.atan2(P.y-srcy,P.x-srcx); P.x+=Math.cos(a)*10; P.y+=Math.sin(a)*10; }
   /* on-being-hit effects */
-  if(s4HasFx('hitHealPickup')&&Math.random()<0.3&&P.hp>0){ healPlayer(5); splat(P.x,P.y-26,'✚ Elysium','#7dff6a',12); } /* Elysium: being hit can drop healing */
+  if(s4HasFx('hitHealPickup')&&Math.random()<0.3&&P.hp>0){ spawnPickup('heart',P.x+rand(-24,24),P.y+rand(-24,24)); splat(P.x,P.y-26,'✚ Elysium drops a Heart','#7dff6a',12); } /* Elysium (wiki): being hit can drop a Heart pickup */
   S.vehemT=4;
   if(s4HasFx('caterpillar')){ S.catHits=(S.catHits||0)+1; if(S.catHits>=5){ S.catHits=0; S.catT=5; } }
   if(s4HasFx('iceblock')){ S.iceT=1.5; P.invuln=Math.max(P.invuln,0.8); }
@@ -5399,6 +5634,7 @@ function killEnemy(e){
   if(s4HasFx('skeletonXp')&&((e.spr||'')+(e.name||'')).toLowerCase().includes('skeleton')&&Math.random()<0.5) G.gems.push({x:e.x,y:e.y,v:2,t:0,fly:false}); /* Harvest Gloves: skeletons drop extra XP */
   const ex=s4BlessRec('execution'); if(ex&&s4Proc(15*s4Scale(ex)*(e.st&&e.st.curse>0?1.8:1))) G.gems.push({x:e.x,y:e.y,v:1,t:0,fly:false});
   if(Math.random()<0.35||e.boss){ const cg=irand(1,6)+(e.elite?25:0); P.coins+=Math.round(cg*(1+(P.stats.gold||0)/100)); SFX.coin(); }
+  rollPickupDrop(e); /* bonus drops: Pick Up Drops stat drives the roll */
   if((P.stats.healKill||0)>0&&s4Proc(P.stats.healKill)) healPlayer(1,true);
   if(s4HasFx('bloodReign')) P.hp=Math.min(P.stats.maxHp,P.hp+e.maxHp*0.002); // heals a share of the slain foe's vitality
   /* necromancy (Mort) */
@@ -5424,13 +5660,14 @@ function killEnemy(e){
   } else if(Math.random()<0.016){
     G.loots.push({x:e.x,y:e.y,item:s4GenGear(pick(S4_SLOT_ORDER),Math.random()<0.6?0:1),t:0});
   }
+  maybeCondenseGems(e.x,e.y); /* an over-full gem field condenses into a Red Gem */
   e.dead=true;
 }
 /* gainXp: heal-on-level-up, permanent-growth blessings, Novemtavo's curse */
 function gainXp(v){
   const P=G.P, S=s4P();
   if(s4HasFx('noXp')) return;
-  const real=v*(1+P.stats.xp/100);
+  const real=v*(1+P.stats.xp/100)*(1+0.6*pickBuffN('experience')); /* Stone of Experience pickup: +60% XP per stack */
   P.xp+=real; P.totalXp+=real;
   while(P.xp>=P.xpNext){ P.xp-=P.xpNext; P.lvl++; P.xpNext=Math.round(8+P.lvl*5.2*Math.pow(1.13,P.lvl));
     if((P.stats.hol||0)>0) healPlayer(P.stats.maxHp*P.stats.hol/100);
@@ -5438,6 +5675,97 @@ function gainXp(v){
     if(s4HasFx('sageCast')){ S.perm.cast+=2; }
     const ar=s4BlessRec('altritual'); if(ar){ const cand=BLESSINGS.filter(b=>!P.bless[b.id]&&!b.legend); if(cand.length){ const tb=pick(cand); S.tempBless={id:tb.id,t:25}; toast('Alteration Ritual: '+tb.name+' (temporary)',tb.col); } }
     recalc(); levelUp(); if(!G||G.state!=='playing') break; }
+}
+/* ================= BONUS DROPS — walk-over pickups =================
+   The design wiki's random bonus drops, implemented in full: the four
+   core pickups (Heart, Magnet, Shield, Wing), the seven 30-second
+   shrine-buff pickups at their published values, the Red Gem that an
+   over-full gem field condenses into, and the pickup routes the wiki
+   hangs off other systems (Magnetize, It's All Energy, Elysium). Every
+   magnitude, duration and base chance the wiki does NOT publish is a
+   chosen value, disclosed as such in the Codex — the same honesty rule
+   as the pattern-derived blessing values. Drop chance rides the Pick
+   Up Drops stat: Luck feeds it 1:1 and Moirai's Fortune raises it. */
+const PICKUP_DEFS={
+  heart:{name:'Heart',col:'#ff5147'},
+  magnet:{name:'Magnet',col:'#ff4040'},
+  shield:{name:'Shield',col:'#6fc2ff'},
+  wing:{name:'Wing',col:'#ffe83d'},
+  spring:{name:'Mineral Spring',col:'#4dffc3'},
+  obelisk:{name:'Obelisk of Sanctuary',col:'#e8e4d8'},
+  orbpower:{name:'Orb of Power',col:'#ffb02e'},
+  collecting:{name:'Stone of Collecting',col:'#b48ce0'},
+  experience:{name:'Stone of Experience',col:'#ffd75e'},
+  stamina:{name:'Stone of Stamina',col:'#7dff6a'},
+  hare:{name:'Totem of the Hare',col:'#d8a24a'},
+  redgem:{name:'Red Gem',col:'#ff2a3c'},
+};
+const PICKUP_TABLE=[['heart',22],['magnet',14],['shield',12],['wing',12],['spring',6],['obelisk',5],['orbpower',6],['collecting',5],['experience',6],['stamina',6],['hare',6]];
+const PICKUP_CAP=16;       /* chosen: pickups waiting on the field */
+const REDGEM_THRESHOLD=60; /* chosen: uncollected gems that condense */
+function pickBuffN(id){ const S=G&&G.P?G.P.s4:null; const b=S&&S.pick?S.pick[id]:null; return b?b.n:0; }
+function dashCap(){ const P=G&&G.P; return (P&&P.stats?(P.stats.dashCharges||1):1)+pickBuffN('hare'); }
+function spawnPickup(id,x,y,extra){
+  if(!G||!G.pickups) return null;
+  if(id!=='redgem'&&G.pickups.reduce((n,p)=>n+(p.id==='redgem'?0:1),0)>=PICKUP_CAP) return null;
+  const pk=Object.assign({id:id,x:x,y:y,t:0,bob:rand(0,6)},extra||{});
+  G.pickups.push(pk); return pk;
+}
+function addPickBuff(id,dur){
+  const S=s4P(); S.pick=S.pick||{};
+  const core=(id==='magnet'||id==='shield'||id==='wing');
+  const b=S.pick[id]||(S.pick[id]={t:0,n:0});
+  if(core){ b.n=1; b.t=dur; } /* core pickups refresh, never stack */
+  else { b.n++; b.t=Math.max(b.t,dur); /* shrine buffs stack (wiki) */
+    if(id==='hare') S.dashPool=Math.min(dashCap(),(S.dashPool===undefined?1:S.dashPool)+1); }
+}
+function pickBuffTick(dt){
+  const S=s4P(); if(!S.pick) return;
+  for(const id in S.pick){ const b=S.pick[id]; b.t-=dt; if(b.t<=0) delete S.pick[id]; }
+  const sn=pickBuffN('spring'); /* Mineral Spring: +0.45 XP/s per stack */
+  if(sn>0){ S.springAcc=(S.springAcc||0)+0.45*sn*dt; if(S.springAcc>=1){ const v=Math.floor(S.springAcc); S.springAcc-=v; gainXp(v); } }
+}
+function collectPickup(pk){
+  const P=G.P, def=PICKUP_DEFS[pk.id]; if(!def) return;
+  let applied='';
+  if(pk.id==='heart'){ const before=P.hp; healPlayer(P.stats.maxHp*0.25); applied='healed '+Math.round(P.hp-before)+' HP (25% of max health)'; }
+  else if(pk.id==='redgem'){ gainXp(pk.v||0); applied='+'+(pk.v||0)+' stored XP claimed'; splat(P.x,P.y-30,'+'+(pk.v||0)+' XP','#ff5a6a',15); }
+  else if(pk.id==='magnet'){ addPickBuff('magnet',10); applied='gem pull radius x6 for 10s'; splat(P.x,P.y-30,'Magnet!','#ff8080',14); }
+  else if(pk.id==='shield'){ addPickBuff('shield',5); applied='invulnerable for 5s'; splat(P.x,P.y-30,'Shielded!','#6fc2ff',14); }
+  else if(pk.id==='wing'){ addPickBuff('wing',8); applied='+30% move speed for 8s'; splat(P.x,P.y-30,'Swift!','#ffe83d',14); }
+  else { addPickBuff(pk.id,30); const n=pickBuffN(pk.id);
+    applied={spring:'+0.45 XP/s and +0.8 life regen',obelisk:'immune to damage',orbpower:'+100% Power damage',collecting:'UNLIMITED gem pull range',experience:'+60% XP',stamina:'attacking movement penalty 0%',hare:'+1 dash charge (one granted now)'}[pk.id]+' — 30s, stack '+n;
+    toast(def.name+' — 30s',def.col); }
+  try{ beep(pk.id==='heart'?660:880,0.09,'sine',0.045); }catch(e){}
+  if(window.__pickupTest) window.__pickupTest.results[pk.id]=applied;
+}
+function rollPickupDrop(e){
+  const P=G.P; if(!P.stats) return;
+  /* chosen base chances (wiki publishes none): 1% / 10% elite / 100% boss,
+     scaled by the Pick Up Drops stat (Luck included 1:1) */
+  const rate=(e.boss?100:(e.elite?10:1))*(1+((P.stats.pickupDropsTotal||0)/100));
+  if(Math.random()*100>=rate) return;
+  let tot=0; for(const w of PICKUP_TABLE) tot+=w[1];
+  let r=Math.random()*tot, id='heart';
+  for(const w of PICKUP_TABLE){ r-=w[1]; if(r<=0){ id=w[0]; break; } }
+  spawnPickup(id,e.x+rand(-18,18),e.y+rand(-18,18));
+}
+function maybeCondenseGems(x,y){
+  if(!G||!G.gems||G.gems.length<REDGEM_THRESHOLD) return;
+  let sum=0; for(const gm of G.gems) sum+=gm.v;
+  G.gems.length=0;
+  if(spawnPickup('redgem',x,y,{v:sum})) chat('Too many loose gems — they condense into a Red Gem holding '+sum+' XP. Walk onto it to claim it; magnets cannot pull it.','#ff5a6a');
+}
+function pickupTick(dt){
+  const P=G.P; if(!G.pickups) return;
+  for(const pk of G.pickups){ pk.t+=dt;
+    if(Math.hypot(P.x-pk.x,P.y-pk.y)<30){ collectPickup(pk); pk.got=true; } }
+  G.pickups=G.pickups.filter(p=>!p.got);
+}
+const LYNX_WING_CH=[[8,10,13,16],[16,20,26,32],[24,30,39,48],[32,40,52,64],[40,52,65,80]]; /* It's All Energy: published % by Infusion level x blessing rarity */
+function magnetizeRoll(x,y){
+  const lv=s4Inf('magnetize'); if(lv<=0) return;
+  if(Math.random()<0.4+0.2*(lv-1)) spawnPickup('magnet',x+rand(-16,16),y+rand(-16,16)); /* chosen chance: wiki states only "chance" */
 }
 /* ================= ZONES / CASTS / POWERS / SUMMONS ================= */
 function s4Inf(id){ const S=G&&G.P?G.P.s4:null; return (S&&S.infLevels&&S.infLevels[id])||0; }
@@ -5621,13 +5949,15 @@ function s4BuffTick(dt){
     if(S.celestT>0) bonus+=15*Bmult('celestialwings');
     if(S.hasteT>0) bonus+=12;
     if(S.speedT>0) bonus+=20;
+    if(pickBuffN('wing')>0) bonus+=30*pickBuffN('wing'); /* Wing pickup: +30% move speed */
     if(P.gemStacks>0) bonus+=0; // gem speed handled in update()
     P.stats.ms=S.baseMs+bonus;
     P.stats.maxHp=(S.baseMaxHp||P.stats.maxHp)+(S.lifeBuff||0);
   }
   /* dash charge pool refill */
   if(S.dashPool===undefined) S.dashPool=P.stats.dashCharges||1;
-  if(S.dashPool<(P.stats.dashCharges||1)){ S.dashRefill=(S.dashRefill||0)+dt; if(S.dashRefill>=P.stats.dashCdMax){ S.dashRefill=0; S.dashPool++; } }
+  { const cap=dashCap(); if(S.dashPool>cap) S.dashPool=cap; /* Totem of the Hare raises the cap while it lasts */
+    if(S.dashPool<cap){ S.dashRefill=(S.dashRefill||0)+dt; if(S.dashRefill>=P.stats.dashCdMax){ S.dashRefill=0; S.dashPool++; } } }
 }
 /* blessingTicks override: statuses + zones + casts + powers + summons + xp/s */
 function blessingTicks(dt){
@@ -5636,6 +5966,7 @@ function blessingTicks(dt){
   if(s4HasFx('enemyCalm')) for(const e of G.enemies) e.spd*=0.92;
   s4ZoneTick(dt); s4CastTick(dt); s4PowerTick(dt); s4SummonTick(dt); s4BuffTick(dt);
   if(P.stats.xpSec>0){ S.xpAcc=(S.xpAcc||0)+P.stats.xpSec*dt; if(S.xpAcc>=1){ const v=Math.floor(S.xpAcc); S.xpAcc-=v; gainXp(v); } }
+  pickBuffTick(dt); /* bonus-drop buff timers + Mineral Spring XP/s */
   S.recalcT=(S.recalcT||0)+dt;
   if(S.recalcT>1){ S.recalcT=0; let dirty=false;
     if(P.coins!==S.lastCoins){ if(s4HasFx('goldDmg')){ S.goldDmg=Math.min(50,(S.goldDmg||0)+Math.max(0,P.coins-S.lastCoins)*0.01); dirty=true; } S.lastCoins=P.coins; }
@@ -5658,7 +5989,7 @@ function tryDash(){
   const P=G.P; if(!P||P.dashT>0) return;
   const S=s4P();
   if(S.dashPool===undefined) S.dashPool=P.stats.dashCharges||1;
-  if((P.stats.dashCharges||1)>1){ if(S.dashPool<=0) return; }
+  if(dashCap()>1){ if(S.dashPool<=0) return; }
   else if(P.dashCd>0) return;
   let dx=(keys['d']||keys['arrowright']?1:0)-(keys['a']||keys['arrowleft']?1:0)+joy.x;
   let dy=(keys['s']||keys['arrowdown']?1:0)-(keys['w']||keys['arrowup']?1:0)+joy.y;
@@ -5667,7 +5998,7 @@ function tryDash(){
   const m=Math.hypot(dx,dy); P.dashDx=dx/m; P.dashDy=dy/m;
   const distMul=1+(P.stats.dashDist||0)/100;
   P.dashT=0.17*distMul; P.dashCd=P.stats.dashCdMax; P.invuln=Math.max(P.invuln,0.24);
-  if((P.stats.dashCharges||1)>1) S.dashPool--;
+  if(dashCap()>1) S.dashPool--;
   SFX.dash();
   for(let i=0;i<8;i++) G.parts.push({x:P.x,y:P.y,vx:rand(-30,30),vy:rand(-30,30),life:.3,t:0,col:'#ffe9a8',sz:3});
   const sx=P.x, sy=P.y, ex=P.x+P.dashDx*150*distMul, ey=P.y+P.dashDy*150*distMul;
@@ -5924,7 +6255,7 @@ function s4StatSources(){
 function s4RenderAffixPanel(){
   const el=document.getElementById('affixPanel'); if(!el||!G) return;
   const P=G.P, s=P.stats, srcs=s4StatSources();
-  const order=['atk','dmg','strike','cast','power','summon','status','dashd','aspd','crit','critAtk','critCast','cdr','armor','evasion','life','regen','ms','msf','luck','xp','xpSec','pull','area','dur','statusDur','kb','dmgUndmg','dmgBoss','dmgElite','dmgVsHigh','heals','hol','healHit','healKill','sumSlots','dashChg','offAdept','offExpert','offMaster','offLegend','rerolls','banishes','alterations','gold'];
+  const order=['atk','dmg','strike','cast','power','summon','status','dashd','aspd','crit','critAtk','critCast','cdr','armor','evasion','life','regen','ms','msf','luck','xp','xpSec','pull','area','dur','statusDur','kb','dmgUndmg','dmgBoss','dmgElite','dmgVsHigh','heals','hol','healHit','healKill','sumSlots','dashChg','offAdept','offExpert','offMaster','offLegend','rerolls','banishes','alterations','pickupDrops','gold'];
   let html='<div class="affixSec"><h4>AFFIX BREAKDOWN</h4>';
   html+='<div class="afxRow">Weapon <b>'+(P.gear.weapon?P.gear.weapon.dmg:0)+' dmg</b> · Crit <b>300%</b> · Armor <b>'+Math.round(s.armor)+'</b> ≈ '+Math.min(75,Math.round(s.armor*0.25))+'% reduction · Evasion <b>'+Math.round(s.evasion)+'</b> ≈ '+Math.min(60,Math.round(s.evasion*0.25))+'% dodge</div>';
   html+='<div class="afxRow">Offers — Novice <b>85.6%</b> · Adept <b>'+(9.5+(s.offAdept||0)).toFixed(1)+'%</b> · Expert <b>'+(3.2+(s.offExpert||0)).toFixed(1)+'%</b> · Master <b>'+(1.7+(s.offMaster||0)).toFixed(1)+'%</b> · Legend <b>25.5% of Master</b></div>';
@@ -6018,8 +6349,25 @@ function updateHUD(){
   '<tr><td>Aegir</td><td>Elidinis</td><td>Sea &amp; waves</td><td></td></tr>'+
   '<tr><td>Moirai (the Fates)</td><td>Guthix</td><td>Fate &amp; balance — Infusions</td><td></td></tr></table>'+
   '<h4>Statuses (wiki numbers)</h4>'+
-  '<p><b>Burning</b> 5s: 100/s + 4% of max life per second. <b>Chilled</b> 10s: −10% attack &amp; move speed per stack; 7 stacks → <b>Frozen</b> 3.5s, then 3s immunity. <b>Cursed</b>: after a 1.6s fuse, 166 damage scaling 150% with Power. <b>Ruptured</b>: 120 per 100 units moved or knocked back. <b>Marked</b>: +30% damage taken. <b>Weakened</b>: −30% damage dealt. <b>Stunned</b> 1.5s + 6s immunity. <b>Poisoned</b> 120/s for 10s. Critical hits deal <b>300%</b>. Luck adds directly to proc chances. Armor and Evasion scale linearly (~200 ≈ 50% at their soft cap). There is no Shock status.</p>';
+  '<p><b>Burning</b> 5s: 100/s + 4% of max life per second. <b>Chilled</b> 10s: −10% attack &amp; move speed per stack; 7 stacks → <b>Frozen</b> 3.5s, then 3s immunity. <b>Cursed</b>: after a 1.6s fuse, 166 damage scaling 150% with Power. <b>Ruptured</b>: 120 per 100 units moved or knocked back. <b>Marked</b>: +30% damage taken. <b>Weakened</b>: −30% damage dealt. <b>Stunned</b> 1.5s + 6s immunity. <b>Poisoned</b> 120/s for 10s. Critical hits deal <b>300%</b>. Luck adds directly to proc chances. Armor and Evasion scale linearly (~200 ≈ 50% at their soft cap). There is no Shock status.</p>'+
+  '<h4>Bonus drops — the pickups</h4>'+
+  '<p>Enemies can drop <b>walk-over pickups</b>. The drop roll rides the <b>Pick Up Drops</b> stat (gear and Moirai\u2019s <b>Fortune</b> blessing raise it; <b>Luck feeds it 1:1</b> on top). The wiki publishes <b>no base drop chance</b> for these, so the chances here are chosen and stated plainly: <b>1%</b> per normal kill, <b>10%</b> from elites, <b>always</b> from bosses — each scaled by +(Pick Up Drops + Luck)%. Of the drops that land: Heart 22%, Magnet 14%, Shield 12%, Wing 12%, and the seven shrine buffs 5–6% each. At most <b>16</b> pickups wait on the field; they stay until collected.</p>'+
+  '<p><b>Core pickups</b> (the wiki publishes no magnitudes or durations for these either — chosen values, in the design\u2019s spirit): <b>Heart</b> heals <b>25% of max health</b>. <b>Magnet</b>: gem pull radius <b>×6 for 10s</b> — greatly enlarged but finite; the wiki\u2019s magnet once pulled the whole map and the design\u2019s own developers removed that, so unlimited pull lives only in the Stone of Collecting below. <b>Shield</b>: invulnerable for <b>5s</b>. <b>Wing</b>: <b>+30% movement speed for 8s</b>. Core pickups refresh their timer rather than stacking.</p>'+
+  '<p><b>Shrine-buff pickups</b> — each lasts <b>30 seconds</b> and <b>stacks</b>, at the wiki\u2019s published values: <b>Mineral Spring</b> +0.45 XP/s and +0.8 life regen · <b>Obelisk of Sanctuary</b> immune to damage · <b>Orb of Power</b> +100% Power damage · <b>Stone of Collecting</b> <b>unlimited</b> pull range — every gem on the map flies to you · <b>Stone of Experience</b> +60% XP · <b>Stone of Stamina</b> attacking movement penalty <b>0%</b> · <b>Totem of the Hare</b> +1 dash charge (one charge is granted the moment you take it).</p>'+
+  '<p><b>Attacking movement penalty:</b> for 0.3s after each attack your stride is <b>20% slower</b> — that is the penalty the Stone of Stamina removes. <b>Red Gem:</b> when <b>60</b> or more XP gems lie uncollected (a chosen threshold), they condense into a single Red Gem holding all their stored XP. Walk onto it to claim it — gem pull, Magnets and the Stone of Collecting <b>cannot</b> pull it. <b>Magnetize</b> (Infusion on Terracotta Army): when one of your Terracotta Soldiers falls — or lands the killing blow, your soldiers being steadfast — a Magnet can drop: <b>40%</b>, +20% per extra Infusion level (the wiki states only \u201cchance\u201d, so the number is chosen). <b>It\u2019s All Energy</b> (Infusion on Lightning Lynx): the lynx\u2019s hits can drop a Wing at the wiki\u2019s published chances — 8/10/13/16% at Infusion I by blessing rarity (Common/Rare/Epic/Legendary), rising to 40/52/65/80% at V. <b>Elysium</b>: being hit has a 30% chance to drop a <b>Heart pickup</b> at your feet — the wiki\u2019s Elysium drops the pickup rather than healing directly, so it does now (it healed 5 HP directly in earlier builds).</p>';
   card.insertBefore(div, back||null);
+  /* bonus-drop self-test: force-spawns every pickup type around the hero
+     inside a live run and reports the effect each one applied */
+  const tbtn=document.createElement('button'); tbtn.className='btn'; tbtn.textContent='Run the bonus-drop self-test (inside a run)';
+  const tout=document.createElement('div'); tout.style.cssText='font-size:12px;margin-top:6px;white-space:pre-line';
+  tbtn.onclick=function(){ const r=(window.__pickups&&window.__pickups.test)?window.__pickups.test():null;
+    if(!r||r.error){ tout.textContent='Self-test: '+(r?r.error:'unavailable — start a run first'); return; }
+    tout.textContent='Self-test running — every pickup type spawned around the hero (health set to 60% so the Heart\u2019s heal is visible)…';
+    setTimeout(()=>{ const res=(window.__pickupTest&&window.__pickupTest.results)||{};
+      tout.textContent='Self-test results:\n'+Object.keys(PICKUP_DEFS).map(id=>PICKUP_DEFS[id].name+': '+(res[id]||'NOT COLLECTED')).join('\n');
+      try{ chat('Pickup self-test complete — per-type results are listed in the Codex.','#ffd75e'); }catch(e){}
+    },1800); };
+  div.appendChild(tbtn); div.appendChild(tout);
   /* repair rows from earlier drafts that the new wiki data supersedes */
   card.querySelectorAll('tr').forEach(tr=>{ const t=tr.textContent;
     if(t.includes('Summer / Winter')){ const c=tr.cells; if(c[0]) c[0].textContent='Summer'; if(c[1]) c[1].textContent='Tumeken'; if(c[2]) c[2].textContent='Sun, desert, nature'; }
@@ -6034,6 +6382,19 @@ function updateHUD(){
     if(t.includes('Blue partyhat')){ tr.classList.add('s4-old-hat-row'); }
   });
 })();
+/* bonus-drop dev/test hooks (the Codex self-test drives these) */
+window.__pickups={ defs:PICKUP_DEFS,
+  spawn:function(id){ if(!G||!G.P) return null; return spawnPickup(id||'heart',G.P.x+26,G.P.y); },
+  buffs:function(){ const S=G&&G.P?G.P.s4:null; return S?(S.pick||{}):null; },
+  test:function(){
+    if(!G||G.state!=='playing'||!G.P) return {error:'enter a run first (the hub has no drops)'};
+    const P=G.P; window.__pickupTest={results:{}};
+    if(P.hp>P.stats.maxHp*0.6) P.hp=Math.round(P.stats.maxHp*0.6); /* so the Heart's heal is measurable */
+    const ids=['heart','magnet','shield','wing','spring','obelisk','orbpower','collecting','experience','stamina','hare'];
+    ids.forEach(function(id,i){ const a=i/ids.length*Math.PI*2; spawnPickup(id,P.x+Math.cos(a)*24,P.y+Math.sin(a)*24); });
+    spawnPickup('redgem',P.x,P.y,{v:25});
+    return window.__pickupTest;
+  } };
 /* audit/debug hooks */
 window.__s4={ UNIQUES, BLESSINGS, INFUSIONS, genGear:s4GenGear, makeUnique:s4MakeUnique, dropBeam:s4DropBeam,
   dropUnique:function(dmdName){ const u=UNIQUES.find(x=>x.d===dmdName); if(!u||!G) return null;
@@ -6197,12 +6558,15 @@ function wornUnequip(slot){
    no cape/shield/legs items; those doll positions are shown empty.
    Tap a worn item to unequip it into the inventory; tap an inventory
    item (Inv tab) to equip it — the hero model re-merges either way. */
-const DOLL=[['cape',null,'Cape'],['head','helm','Head'],['neck','amulet','Neck'],
-  ['weapon','weapon','Weapon'],['body','torso','Body'],['shield',null,'Shield'],
-  ['legs',null,'Legs'],['hands','gloves','Hands'],['feet','boots','Feet'],['ring','ring','Ring']];
-function dollSlotEl(area, slot, label){
+/* Slot positions are interface 387's own worn-item coordinates
+   (x, y of each 36x36 slot in the 190x205 equipment screen). */
+const DOLL=[[null,'Cape',36,43],['helm','Head',77,4],['amulet','Neck',77,43],
+  ['weapon','Weapon',21,82],['torso','Body',77,82],[null,'Shield',133,82],
+  [null,'Legs',77,122],['gloves','Hands',21,162],['boots','Feet',77,162],['ring','Ring',133,162]];
+function dollSlotEl(slot, label, x, y){
   const d=document.createElement('div');
-  d.className='dslot'; d.style.gridArea=area;
+  d.className='dslot';
+  if(x!=null){ d.style.left=(x/190*100)+'%'; d.style.top=(y/205*100)+'%'; }
   const it=slot&&G&&G.P?G.P.gear[slot]:null;
   if(!slot){ d.className+=' noSlot'; d.innerHTML='<span class="dslotLab">'+label+'</span>'; d.title=label+' — no such items in RogueScape'; return d; }
   if(it){
@@ -6224,10 +6588,10 @@ function updateEquipUI(){
   const box=$('slots'); if(!box) return;
   box.innerHTML='';
   const doll=document.createElement('div'); doll.className='doll';
-  for(const [area,slot,label] of DOLL) doll.appendChild(dollSlotEl(area,slot,label));
+  for(const [slot,label,x,y] of DOLL) doll.appendChild(dollSlotEl(slot,label,x,y));
   box.appendChild(doll);
   const extra=document.createElement('div'); extra.className='dollExtra';
-  for(const slot of ['waist','jewel','relic']) extra.appendChild(dollSlotEl('',slot,SLOT_LABEL[slot]||slot));
+  for(const slot of ['waist','jewel','relic']) extra.appendChild(dollSlotEl(slot,SLOT_LABEL[slot]||slot));
   box.appendChild(extra);
   const s=P.stats;
   $('statSummary').innerHTML=
@@ -6367,7 +6731,7 @@ function buildHubPlayer(){
     stats:{}, lastHurtT:null, lastDealtT:null };
   for(const s in worn) if(worn[s]) P.gear[s]=worn[s];
   if(!P.gear.weapon) P.gear.weapon=hero.start;
-  G={P, enemies:[], gems:[], loots:[], projs:[], allies:[], splats:[], parts:[], zones:[],
+  G={P, enemies:[], gems:[], loots:[], pickups:[], projs:[], allies:[], splats:[], parts:[], zones:[],
      time:0, spawnT:0, eliteT:99999, miniDone:true, bossSpawned:true, boss:null,
      state:'hub', hub:true, mode:'3d', over:false, victory:false, shake:0, slowmo:0,
      walkTarget:null, walkPath:null, walkDir:null, hubPending:null, lastHitBy:null};
@@ -6445,7 +6809,6 @@ async function enterHub(){
   }catch(e){}
 }
 function returnToHub(){
-  try{ g3dRoofSet(-1); }catch(e){}
   try{ if(G&&G.mode==='3d'&&!G.hub) exit3DRun(); }catch(e){}
   for(const id of ['pauseScreen','endScreen','blessScreen','bankScreen','shopScreen','heroPickScreen','scoresScreen']) $(id).classList.add('hidden');
   $('hud').classList.add('hidden');
